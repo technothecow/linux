@@ -22907,6 +22907,21 @@ S:	Maintained
 F:	drivers/nvdimm/nd_virtio.c
 F:	drivers/nvdimm/virtio_pmem.c
 
+VIRTIO SDHCI DRIVER
+M:	Mikhail Krasheninnikov <krashmisha@gmail.com>
+M:	"Michael S. Tsirkin" <mst@redhat.com>
+M:	Jason Wang <jasowang@redhat.com>
+M:	Paolo Bonzini <pbonzini@redhat.com>
+M:	Stefan Hajnoczi <stefanha@redhat.com>
+M:	Xuan Zhuo <xuanzhuo@linux.alibaba.com>
+L:	virtualization@lists.linux-foundation.org
+L:	linux-mmc@vger.kernel.org
+L:	OASIS-virtio@ConnectedCommunity.org
+S:	Maintained
+F:	drivers/mmc/host/virtio-sdhci.c
+F:	drivers/mmc/host/virtio-sdhci.h
+F:	include/uapi/linux/virtio-sdhci.h
+
 VIRTIO SOUND DRIVER
 M:	Anton Yakovlev <anton.yakovlev@opensynergy.com>
 M:	"Michael S. Tsirkin" <mst@redhat.com>

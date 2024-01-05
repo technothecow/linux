@@ -1069,3 +1069,17 @@ config MMC_LITEX
 	  module will be called litex_mmc.
 
 	  If unsure, say N.
+
+config SDHCI_VIRTIO
+	tristate "VirtIO SDHCI Host Controller support"
+	depends on VIRTIO
+	help
+	  This enables support for the Virtio SDHCI driver, which allows the
+	  kernel to interact with SD/MMC devices over Virtio. Virtio is a
+	  virtualization standard for network and disk device drivers,
+	  providing a common API for virtualized environments.
+
+	  Enable this option if you are running the kernel in a virtualized
+	  environment and need SD/MMC support via Virtio.
+
+	  If unsure, say N.
