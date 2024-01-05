@@ -1069,3 +1069,8 @@ config MMC_LITEX
 	  module will be called litex_mmc.
 
 	  If unsure, say N.
+
+config MMC_VIRTIO
+	tristate "VirtIO MMC Host Controller support"
+	help
+	  TODO: write description
