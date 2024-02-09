@@ -83,17 +83,10 @@ static ssize_t virtio_mmc_show(struct device *dev, struct device_attribute *attr
     return -EINVAL;
 }
 
-struct device_attribute virtio_mmc_in_attr = {
-    .attr = {
-        .name = "in",
-        .mode = 0644,
-    },
-    .show = virtio_mmc_show,
-    .store = virtio_mmc_store,
-};
+static DEVICE_ATTR(in, 0664, virtio_mmc_show, virtio_mmc_store);
 
 struct attribute *virtio_mmc_attrs[] = {
-    &virtio_mmc_in_attr.attr,
+    &dev_attr_in.attr,
     NULL
 };
 
@@ -151,7 +144,7 @@ static struct virtio_driver virtio_mmc_driver = {
     .remove = virtio_mmc_remove,
 };
 
-static int __init virtio_mmc_init(void)
+static int virtio_mmc_init(void)
 {
     return register_virtio_driver(&virtio_mmc_driver);
 }
