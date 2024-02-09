@@ -15,7 +15,7 @@ MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("VirtIO MMC driver");
 MODULE_AUTHOR("mi");
 
-#define VIRTIO_MMC_DEV_ID 21
+#define VIRTIO_MMC_DEV_ID 42
 
 static struct virtio_device_id id_table[] = {
     { 
@@ -144,18 +144,5 @@ static struct virtio_driver virtio_mmc_driver = {
     .remove = virtio_mmc_remove,
 };
 
-static int virtio_mmc_init(void)
-{
-    return register_virtio_driver(&virtio_mmc_driver);
-}
-
-static void __exit virtio_mmc_exit(void)
-{
-    unregister_virtio_driver(&virtio_mmc_driver);
-}
-
 module_virtio_driver(virtio_mmc_driver);
 MODULE_DEVICE_TABLE(virtio, id_table);
-
-module_init(virtio_mmc_init);
-module_exit(virtio_mmc_exit);
