@@ -83,10 +83,10 @@ static ssize_t virtio_mmc_show(struct device *dev, struct device_attribute *attr
     return -EINVAL;
 }
 
-static DEVICE_ATTR(in, 0664, virtio_mmc_show, virtio_mmc_store);
+static DEVICE_ATTR_RW(virtio_mmc);
 
 struct attribute *virtio_mmc_attrs[] = {
-    &dev_attr_in.attr,
+    &dev_attr_virtio_mmc.attr,
     NULL
 };
 
