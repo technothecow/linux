@@ -70,7 +70,7 @@ static ssize_t virtio_mmc_store(struct device *dev, struct device_attribute *att
     struct virtio_device *vdev = dev_to_virtio(dev);
     struct virtmmc_info *info = vdev->priv;
 
-    if (strcmp(attr->attr.name, "in") == 0) {
+    if (strcmp(attr->attr.name, "virtio_mmc") == 0) {
         virtio_mmc_store_in(info, buf);
         return count;
     }
@@ -82,7 +82,7 @@ static ssize_t virtio_mmc_show(struct device *dev, struct device_attribute *attr
     struct virtio_device *vdev = dev_to_virtio(dev);
     struct virtmmc_info *info = vdev->priv;
 
-    if (strcmp(attr->attr.name, "in") == 0) {
+    if (strcmp(attr->attr.name, "virtio_mmc") == 0) {
         return sprintf(buf, "%d\n", info->in);
     }
 
