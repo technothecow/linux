@@ -44,7 +44,13 @@ static void vq_callback(struct virtqueue *vq) {
 }
 
 static void virtio_mmc_store_in(struct virtmmc_info *info, const char *buf) {
-    info->in = kstrtoul(buf, 10, (unsigned long *)&info->out);
+    {
+        int ret = kstrtoul(buf, 10, (unsigned long *)&info->out);
+        if(ret) {
+            pr_alert("virtio_mmc: failed to parse input\n");
+            return;
+        }
+    }
 
     struct scatterlist sg_in, sg_out;
     sg_init_one(&sg_in, &info->in, sizeof(info->in));
