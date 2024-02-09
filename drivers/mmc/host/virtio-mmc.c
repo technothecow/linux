@@ -154,5 +154,8 @@ static void __exit virtio_mmc_exit(void)
     unregister_virtio_driver(&virtio_mmc_driver);
 }
 
+module_virtio_driver(virtio_mmc_driver);
+MODULE_DEVICE_TABLE(virtio, id_table);
+
 module_init(virtio_mmc_init);
 module_exit(virtio_mmc_exit);
