@@ -1,3 +1,4 @@
+#include "linux/blkdev.h"
 #include "linux/device.h"
 #include "linux/kstrtox.h"
 #include "linux/mod_devicetable.h"
@@ -32,28 +33,18 @@ struct virtmmc_info {
 static int virtio_mmc_probe(struct virtio_device *vdev) {
     // Add dummy /dev/mmcblk0
     printk(KERN_INFO "virtio_mmc_probe\n");
-    struct device *dev = &vdev->dev;
-    dev_t devno = MKDEV(0, 0);
-    struct device *dummy_dev = device_create(dev->class, dev, devno, NULL, "mmcblk0");
-    printk(KERN_INFO "dummy_dev: %p\n", dummy_dev);
-    if (IS_ERR(dummy_dev)) {
-        dev_err(dev, "Failed to create dummy device\n");
-        return PTR_ERR(dummy_dev);
+    
+    int err = device_register(&vdev->dev);
+    if(err) {
+        printk(KERN_ERR "[virtio mmc] device_register failed\n");
     }
 
     return 0;
 }
 
 static void virtio_mmc_remove(struct virtio_device *vdev) {
-    // Remove dummy /dev/mmcblk0
     printk(KERN_INFO "virtio_mmc_remove\n");
-    struct device *dev = &vdev->dev;
-    device_destroy(dev->class, MKDEV(0, 0));
-
-    // Undo any other operations performed in the probe function
-
-    // Add your code here to undo any other operations performed in the probe function
-
+    device_unregister(&vdev->dev);
 }
 
 static struct virtio_driver virtio_mmc_driver = {
