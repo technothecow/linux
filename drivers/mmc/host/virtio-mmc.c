@@ -27,117 +27,30 @@ static struct virtio_device_id id_table[] = {
 
 struct virtmmc_info {
     struct virtqueue *vq;
-    uint32_t in, out;
-};
-
-static void vq_callback(struct virtqueue *vq) {
-    struct virtmmc_info *info = vq->vdev->priv;
-    uint32_t len;
-
-    uint32_t* res = virtqueue_get_buf(vq, &len);
-    if (!res) {
-        pr_alert("virtio_mmc: failed to get buffer from vq\n");
-        return;
-    }
-
-    info->in = *res;
-}
-
-static void virtio_mmc_store_in(struct virtmmc_info *info, const char *buf) {
-    {
-        int ret = kstrtoul(buf, 10, (unsigned long *)&info->out);
-        if(ret) {
-            pr_alert("virtio_mmc: failed to parse input\n");
-            return;
-        }
-    }
-
-    struct scatterlist sg_in, sg_out;
-    sg_init_one(&sg_in, &info->in, sizeof(info->in));
-    sg_init_one(&sg_out, &info->out, sizeof(info->out));
-
-    struct scatterlist *request[] = { &sg_out, &sg_in };
-
-    if (virtqueue_add_sgs(info->vq, request, 1, 1, &info->in, GFP_KERNEL) < 0) {
-        pr_alert("virtio_mmc: failed to add scatterlist to vq\n");
-        return;
-    }
-
-    virtqueue_kick(info->vq);
-}
-
-static ssize_t virtio_mmc_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count) {
-    struct virtio_device *vdev = dev_to_virtio(dev);
-    struct virtmmc_info *info = vdev->priv;
-
-    if (strcmp(attr->attr.name, "virtio_mmc") == 0) {
-        virtio_mmc_store_in(info, buf);
-        return count;
-    }
-
-    return -EINVAL;
-}
-
-static ssize_t virtio_mmc_show(struct device *dev, struct device_attribute *attr, char *buf) {
-    struct virtio_device *vdev = dev_to_virtio(dev);
-    struct virtmmc_info *info = vdev->priv;
-
-    if (strcmp(attr->attr.name, "virtio_mmc") == 0) {
-        return sprintf(buf, "%d\n", info->in);
-    }
-
-    return -EINVAL;
-}
-
-static DEVICE_ATTR_RW(virtio_mmc);
-
-struct attribute *virtio_mmc_attrs[] = {
-    &dev_attr_virtio_mmc.attr,
-    NULL
-};
-
-struct attribute_group virtio_mmc_attr_group = {
-    .name = "virtio_mmc",
-    .attrs = virtio_mmc_attrs,
 };
 
 static int virtio_mmc_probe(struct virtio_device *vdev) {
-    struct virtmmc_info *info;
-
-    {
-        int ret = sysfs_create_group(&vdev->dev.kobj, &virtio_mmc_attr_group);
-        if (ret) {
-            pr_alert("virtio_mmc: failed to create sysfs group\n");
-            return ret;
-        }
+    // Add dummy /dev/mmcblk0
+    struct device *dev = &vdev->dev;
+    dev_t devno = MKDEV(0, 0);
+    struct device *dummy_dev = device_create(dev->class, dev, devno, NULL, "mmcblk0");
+    if (IS_ERR(dummy_dev)) {
+        dev_err(dev, "Failed to create dummy device\n");
+        return PTR_ERR(dummy_dev);
     }
-
-    info = kzalloc(1, sizeof(*info));
-    if(!info) {
-        return -ENOMEM;
-    }
-
-    info->vq = virtio_find_single_vq(vdev, vq_callback, "input");
-    if(IS_ERR(info->vq)) {
-        pr_alert("virtio_mmc: failed to connect to virtqueue\n");
-    }
-
-    info->in = 0;
-    info->out = 0;
-
-    vdev->priv = info;
 
     return 0;
 }
 
 static void virtio_mmc_remove(struct virtio_device *vdev) {
-    struct virtmmc_info *info = vdev->priv;
-    kfree(info);
+    // Remove dummy /dev/mmcblk0
+    struct device *dev = &vdev->dev;
+    device_destroy(dev->class, MKDEV(0, 0));
 
-    sysfs_remove_group(&vdev->dev.kobj, &virtio_mmc_attr_group);
+    // Undo any other operations performed in the probe function
 
-    vdev->config->reset(vdev);
-    vdev->config->del_vqs(vdev);
+    // Add your code here to undo any other operations performed in the probe function
+
 }
 
 static struct virtio_driver virtio_mmc_driver = {
