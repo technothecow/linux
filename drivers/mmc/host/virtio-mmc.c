@@ -31,9 +31,11 @@ struct virtmmc_info {
 
 static int virtio_mmc_probe(struct virtio_device *vdev) {
     // Add dummy /dev/mmcblk0
+    printk(KERN_INFO "virtio_mmc_probe\n");
     struct device *dev = &vdev->dev;
     dev_t devno = MKDEV(0, 0);
     struct device *dummy_dev = device_create(dev->class, dev, devno, NULL, "mmcblk0");
+    printk(KERN_INFO "dummy_dev: %p\n", dummy_dev);
     if (IS_ERR(dummy_dev)) {
         dev_err(dev, "Failed to create dummy device\n");
         return PTR_ERR(dummy_dev);
@@ -44,6 +46,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 
 static void virtio_mmc_remove(struct virtio_device *vdev) {
     // Remove dummy /dev/mmcblk0
+    printk(KERN_INFO "virtio_mmc_remove\n");
     struct device *dev = &vdev->dev;
     device_destroy(dev->class, MKDEV(0, 0));
 
