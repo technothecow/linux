@@ -9,7 +9,6 @@ struct virtmmc_data {
 
 static int virtio_mmc_probe(struct virtio_device *vdev) {
 	printk(KERN_INFO "virtio_mmc_probe\n");
-
 	return 0;
 }
 

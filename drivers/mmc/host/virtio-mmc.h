@@ -11,7 +11,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev);
 static void virtio_mmc_remove(struct virtio_device *vdev);
 
 static const struct virtio_device_id id_table[] = {
-	{ VIRTIO_ID_MMC, VIRTIO_MMC_DEV_ID },
+	{ VIRTIO_MMC_DEV_ID, VIRTIO_DEV_ANY_ID },
 	{ 0 },
 };
 
