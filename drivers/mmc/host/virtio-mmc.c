@@ -1,4 +1,5 @@
 #include "virtio-mmc.h"
+#include "linux/mmc/host.h"
 #include <linux/virtio.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
@@ -9,14 +10,51 @@ struct virtmmc_data {
 	struct mmc_host *mmc;
 	struct virtqueue *vq;
 	struct scatterlist sg;
-	dev_t devt;
-	struct cdev cdev;
 	struct device *device;
 	struct class *chardev_class;
+
+	dev_t devt;
+	struct cdev cdev;
 };
 
-static const struct file_operations virtio_mmc_fops = {
+static const struct file_operations virtio_mmc_dev_fops = {
 	.owner = THIS_MODULE,
+};
+
+static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
+	printk(KERN_INFO "virtio_mmc_request\n");
+}
+
+static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
+	printk(KERN_INFO "virtio_mmc_set_ios\n");
+}
+
+static int virtio_mmc_get_ro(struct mmc_host *mmc) {
+	printk(KERN_INFO "virtio_mmc_get_ro\n");
+	return 0;
+}
+
+static int virtio_mmc_get_cd(struct mmc_host *mmc) {
+	printk(KERN_INFO "virtio_mmc_get_cd\n");
+	return 0;
+}
+
+static void virtio_mmc_enable_sdio_irq(struct mmc_host *mmc, int enable) {
+	printk(KERN_INFO "virtio_mmc_enable_sdio_irq, enable = %d", enable);
+}
+
+static int virtio_mmc_start_signal_voltage_switch(struct mmc_host *mmc, struct mmc_ios *ios) {
+	printk(KERN_INFO "virtio_mmc_start_signal_voltage_switch\n");
+	return 0;
+}
+
+static const struct mmc_host_ops virtio_mmc_host_ops = {
+	.request = virtio_mmc_request,
+	.set_ios = virtio_mmc_set_ios,
+	.get_ro = virtio_mmc_get_ro,
+	.get_cd = virtio_mmc_get_cd,
+	.enable_sdio_irq = virtio_mmc_enable_sdio_irq,
+	.start_signal_voltage_switch = virtio_mmc_start_signal_voltage_switch,
 };
 
 static int create_dev_entry(struct virtmmc_data *data) {
@@ -40,7 +78,7 @@ static int create_dev_entry(struct virtmmc_data *data) {
 		goto free_chrdev_region;
 	}
 
-	cdev_init(&data->cdev, &virtio_mmc_fops);
+	cdev_init(&data->cdev, &virtio_mmc_dev_fops);
 	data->cdev.owner = THIS_MODULE;
 
 	int dev_major = MAJOR(data->devt);
@@ -78,6 +116,23 @@ static void dealloc_dev_entry(struct virtmmc_data *data) {
 	unregister_chrdev_region(data->devt, VIRTIO_MMC_MINOR_COUNT);
 }
 
+static int create_host(struct virtmmc_data *data) {
+	struct mmc_host *host = mmc_alloc_host(0, data->device);
+	host->ops = &virtio_mmc_host_ops;
+	host->f_min = 100000;
+	host->f_max = 52000000;
+	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+
+	data->mmc = host;
+
+	mmc_add_host(data->mmc);
+}
+
+static void remove_host(struct mmc_host *host) {
+	mmc_remove_host(host);
+	mmc_free_host(host);
+}
+
 static int virtio_mmc_probe(struct virtio_device *vdev) {
 	int err;
 	printk(KERN_INFO "virtio_mmc_probe\n");
@@ -97,6 +152,22 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		printk(KERN_ERR "Failed to create device entry\n");
 		goto free_data;
 	}
+	printk(KERN_INFO "virtio_mmc_probe: device entry created\n");
+
+	err = create_host(data);
+	if(err) {
+		printk(KERN_ERR "Failed to make host\n");
+		goto free_dev_entry;
+	}
+	printk(KERN_INFO "virtio_mmc_probe: mmc host created\n");
+
+	return 0;
+
+remove_host:
+	remove_host(data->mmc);
+
+free_dev_entry:
+	dealloc_dev_entry(data);
 
 free_data:
 	kfree(data);
@@ -108,6 +179,8 @@ static void virtio_mmc_remove(struct virtio_device *vdev) {
 	printk(KERN_INFO "virtio_mmc_remove\n");
 
 	struct virtmmc_data *data = vdev->priv;
+
+	remove_host(data->mmc);
 
 	dealloc_dev_entry(data);
 
