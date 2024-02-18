@@ -13,7 +13,7 @@ struct virtmmc_data {
 	struct mmc_host *mmc;
 	struct virtqueue *vq;
 	struct scatterlist sg;
-	dev_t *devt;
+	dev_t devt;
 	struct cdev *cdev;
 	struct device *device;
 	struct class *chardev_class;
@@ -50,10 +50,12 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 	vdev->priv = data;
 	printk(KERN_INFO "virtio_mmc_probe: data allocated\n");
 
-	int first_minor = 0;
-	unsigned minor_count = 1;
-	const char *dev_name = "mmcblk";
-	err = alloc_chrdev_region(data->devt, first_minor, minor_count, dev_name);
+	err = alloc_chrdev_region(
+		&data->devt, 
+		VIRTIO_MMC_FIRST_MINOR, 
+		VIRTIO_MMC_MINOR_COUNT, 
+		VIRTIO_MMC_DEV_NAME
+		);
 	if (err) {
 		printk(KERN_ERR "Failed to allocate char device region\n");
 		goto free_data;
