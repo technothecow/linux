@@ -36,7 +36,7 @@ static int virtio_mmc_get_ro(struct mmc_host *mmc) {
 
 static int virtio_mmc_get_cd(struct mmc_host *mmc) {
 	printk(KERN_INFO "virtio_mmc_get_cd\n");
-	return 0;
+	return 1;
 }
 
 static void virtio_mmc_enable_sdio_irq(struct mmc_host *mmc, int enable) {
