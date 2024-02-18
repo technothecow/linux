@@ -15,36 +15,12 @@ struct virtmmc_data {
 	struct class *chardev_class;
 };
 
-static int virtio_mmc_open(struct inode *inode, struct file *filp) {
-    // Open implementation
-    return 0;
-}
-
-static int virtio_mmc_release(struct inode *inode, struct file *filp) {
-    // Release implementation
-    return 0;
-}
-
 static const struct file_operations virtio_mmc_fops = {
 	.owner = THIS_MODULE,
-    .open = virtio_mmc_open,
-    .release = virtio_mmc_release,
 };
 
-
-static int virtio_mmc_probe(struct virtio_device *vdev) {
+static int create_dev_entry(struct virtmmc_data *data) {
 	int err;
-	printk(KERN_INFO "virtio_mmc_probe\n");
-
-	struct virtmmc_data *data;
-
-	data = kcalloc(1, sizeof(*data), GFP_KERNEL);
-	if (!data) {
-		printk(KERN_ERR "Failed to allocate memory for virtmmc_data\n");
-		return -ENOMEM;
-	}
-	vdev->priv = data;
-	printk(KERN_INFO "virtio_mmc_probe: data allocated\n");
 
 	err = alloc_chrdev_region(
 		&data->devt, 
@@ -54,7 +30,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		);
 	if (err) {
 		printk(KERN_ERR "Failed to allocate char device region\n");
-		goto free_data;
+		return err;
 	}
 
 	data->chardev_class = class_create("mmcblk");
@@ -92,6 +68,36 @@ free_chardev_class:
 free_chrdev_region:
 	unregister_chrdev_region(data->devt, VIRTIO_MMC_MINOR_COUNT);
 
+	return err;
+}
+
+static void dealloc_dev_entry(struct virtmmc_data *data) {
+	device_destroy(data->chardev_class, data->devt);
+	class_destroy(data->chardev_class);
+	cdev_del(&data->cdev);
+	unregister_chrdev_region(data->devt, VIRTIO_MMC_MINOR_COUNT);
+}
+
+static int virtio_mmc_probe(struct virtio_device *vdev) {
+	int err;
+	printk(KERN_INFO "virtio_mmc_probe\n");
+
+	struct virtmmc_data *data;
+
+	data = kcalloc(1, sizeof(*data), GFP_KERNEL);
+	if (!data) {
+		printk(KERN_ERR "Failed to allocate memory for virtmmc_data\n");
+		return -ENOMEM;
+	}
+	vdev->priv = data;
+	printk(KERN_INFO "virtio_mmc_probe: data allocated\n");
+
+	err = create_dev_entry(data);
+	if (err) {
+		printk(KERN_ERR "Failed to create device entry\n");
+		goto free_data;
+	}
+
 free_data:
 	kfree(data);
 
@@ -103,9 +109,7 @@ static void virtio_mmc_remove(struct virtio_device *vdev) {
 
 	struct virtmmc_data *data = vdev->priv;
 
-	device_destroy(data->chardev_class, data->devt);
-	class_destroy(data->chardev_class);
-	cdev_del(&data->cdev);
-	unregister_chrdev_region(data->devt, 1);
+	dealloc_dev_entry(data);
+
 	kfree(data);
 }
