@@ -74,7 +74,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		goto free_cdev;
 	}
 
-	data->device = device_create(data->chardev_class, NULL, MKDEV(dev_major, VIRTIO_MMC_FIRST_MINOR), NULL, VIRTIO_MMC_DEV_NAME);
+	data->device = device_create(data->chardev_class, NULL, MKDEV(dev_major, VIRTIO_MMC_FIRST_MINOR), NULL, "mmcblk%d", 0);
 	if (IS_ERR(data->device)) {
 		printk(KERN_ERR "Failed to create device\n");
 		err = PTR_ERR(data->device);
