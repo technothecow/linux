@@ -61,7 +61,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		goto free_data;
 	}
 
-	data->chardev_class = class_create(dev_name);
+	data->chardev_class = class_create(VIRTIO_MMC_DEV_NAME);
 	if (IS_ERR(data->chardev_class)) {
 		printk(KERN_ERR "Failed to create class\n");
 		err = PTR_ERR(data->chardev_class);
@@ -71,14 +71,14 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 	cdev_init(data->cdev, &virtio_mmc_fops);
 	data->cdev->owner = THIS_MODULE;
 
-	int dev_major = MAJOR(*data->devt);
-	err = cdev_add(data->cdev, MKDEV(dev_major, first_minor), minor_count);
+	int dev_major = MAJOR(data->devt);
+	err = cdev_add(data->cdev, MKDEV(dev_major, VIRTIO_MMC_FIRST_MINOR), VIRTIO_MMC_MINOR_COUNT);
 	if (err) {
 		printk(KERN_ERR "Failed to add cdev\n");
 		goto free_cdev;
 	}
 
-	data->device = device_create(data->chardev_class, NULL, MKDEV(dev_major, first_minor), NULL, dev_name);
+	data->device = device_create(data->chardev_class, NULL, MKDEV(dev_major, VIRTIO_MMC_FIRST_MINOR), NULL, VIRTIO_MMC_DEV_NAME);
 	if (IS_ERR(data->device)) {
 		printk(KERN_ERR "Failed to create device\n");
 		err = PTR_ERR(data->device);
