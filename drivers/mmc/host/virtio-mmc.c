@@ -10,7 +10,7 @@ struct virtmmc_data {
 	struct virtqueue *vq;
 	struct scatterlist sg;
 	dev_t devt;
-	struct cdev *cdev;
+	struct cdev cdev;
 	struct device *device;
 	struct class *chardev_class;
 };
@@ -25,7 +25,7 @@ static int virtio_mmc_release(struct inode *inode, struct file *filp) {
     return 0;
 }
 
-static struct file_operations virtio_mmc_fops = {
+static const struct file_operations virtio_mmc_fops = {
 	.owner = THIS_MODULE,
     .open = virtio_mmc_open,
     .release = virtio_mmc_release,
@@ -64,11 +64,11 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		goto free_chrdev_region;
 	}
 
-	cdev_init(data->cdev, &virtio_mmc_fops);
-	data->cdev->owner = THIS_MODULE;
+	cdev_init(&data->cdev, &virtio_mmc_fops);
+	data->cdev.owner = THIS_MODULE;
 
 	int dev_major = MAJOR(data->devt);
-	err = cdev_add(data->cdev, MKDEV(dev_major, VIRTIO_MMC_FIRST_MINOR), VIRTIO_MMC_MINOR_COUNT);
+	err = cdev_add(&data->cdev, MKDEV(dev_major, VIRTIO_MMC_FIRST_MINOR), VIRTIO_MMC_MINOR_COUNT);
 	if (err) {
 		printk(KERN_ERR "Failed to add cdev\n");
 		goto free_cdev;
@@ -84,7 +84,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 	return 0;
 
 free_cdev:
-	cdev_del(data->cdev);
+	cdev_del(&data->cdev);
 
 free_chardev_class:
 	class_destroy(data->chardev_class);
@@ -105,7 +105,7 @@ static void virtio_mmc_remove(struct virtio_device *vdev) {
 
 	device_destroy(data->chardev_class, data->devt);
 	class_destroy(data->chardev_class);
-	cdev_del(data->cdev);
+	cdev_del(&data->cdev);
 	unregister_chrdev_region(data->devt, 1);
 	kfree(data);
 }
