@@ -57,8 +57,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		goto free_data;
 	}
 
-	static const char* dev_name = "virtio-mmc";
-	data->chardev_class = class_create(dev_name);
+	data->chardev_class = class_create("mmcblk");
 	if (IS_ERR(data->chardev_class)) {
 		printk(KERN_ERR "Failed to create class\n");
 		err = PTR_ERR(data->chardev_class);
