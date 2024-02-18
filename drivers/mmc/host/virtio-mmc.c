@@ -1,12 +1,8 @@
 #include "virtio-mmc.h"
-#include "linux/cdev.h"
-#include "linux/device/class.h"
-#include "linux/kdev_t.h"
-#include "linux/kobject.h"
-#include "linux/slab.h"
-#include "linux/types.h"
-#include <linux/fs.h>
+#include <linux/virtio.h>
+#include <linux/cdev.h>
 #include <linux/device.h>
+#include <linux/fs.h>
 
 struct virtmmc_data {
 	struct virtio_device *vdev;
@@ -61,7 +57,8 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		goto free_data;
 	}
 
-	data->chardev_class = class_create(VIRTIO_MMC_DEV_NAME);
+	static const char* dev_name = "virtio-mmc";
+	data->chardev_class = class_create(dev_name);
 	if (IS_ERR(data->chardev_class)) {
 		printk(KERN_ERR "Failed to create class\n");
 		err = PTR_ERR(data->chardev_class);
