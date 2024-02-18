@@ -22,7 +22,11 @@ static const struct file_operations virtio_mmc_dev_fops = {
 };
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
-	printk(KERN_INFO "virtio_mmc_request\n");
+	printk(KERN_INFO "Request details:\n");
+	printk(KERN_INFO "Command: %d\n", mrq->cmd->opcode);
+	printk(KERN_INFO "Argument: %d\n", mrq->cmd->arg);
+	printk(KERN_INFO "Data length: %d\n", mrq->data->blocks * mrq->data->blksz);
+	printk(KERN_INFO "Data flags: %x\n", mrq->data->flags);
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
