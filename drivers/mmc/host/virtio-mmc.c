@@ -126,6 +126,7 @@ static int create_host(struct virtmmc_data *data) {
 	data->mmc = host;
 
 	mmc_add_host(data->mmc);
+	return 0;
 }
 
 static void remove_host(struct mmc_host *host) {
@@ -163,8 +164,8 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 
 	return 0;
 
-remove_host:
-	remove_host(data->mmc);
+// remove_host:
+// 	remove_host(data->mmc);
 
 free_dev_entry:
 	dealloc_dev_entry(data);
