@@ -94,7 +94,7 @@ free_chardev_class:
 	class_destroy(data->chardev_class);
 
 free_chrdev_region:
-	unregister_chrdev_region(*data->devt, minor_count);
+	unregister_chrdev_region(data->devt, VIRTIO_MMC_MINOR_COUNT);
 
 free_data:
 	kfree(data);
@@ -107,9 +107,9 @@ static void virtio_mmc_remove(struct virtio_device *vdev) {
 
 	struct virtmmc_data *data = vdev->priv;
 
-	device_destroy(data->chardev_class, *data->devt);
+	device_destroy(data->chardev_class, data->devt);
 	class_destroy(data->chardev_class);
 	cdev_del(data->cdev);
-	unregister_chrdev_region(*data->devt, 1);
+	unregister_chrdev_region(data->devt, 1);
 	kfree(data);
 }
