@@ -169,6 +169,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		return -ENOMEM;
 	}
 	vdev->priv = data;
+	data->vdev = vdev;
 	printk(KERN_INFO "virtio_mmc_probe: data allocated\n");
 
 	err = create_dev_entry(data);
