@@ -71,6 +71,7 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 };
 
 static int create_dev_entry(struct virtmmc_data *data) {
+	return 0;
 	int err;
 
 	err = alloc_chrdev_region(
@@ -132,7 +133,7 @@ static void dealloc_dev_entry(struct virtmmc_data *data) {
 static int create_host(struct virtmmc_data *data) {
 	int err;
 
-	struct mmc_host *host = mmc_alloc_host(0, data->device);
+	struct mmc_host *host = mmc_alloc_host(0, &data->vdev->dev);
 	host->ops = &virtio_mmc_host_ops;
 	host->f_min = 100000;
 	host->f_max = 52000000;
@@ -145,6 +146,8 @@ static int create_host(struct virtmmc_data *data) {
 		printk(KERN_ERR "Failed to add host\n");
 		return err;
 	}
+
+	
 
 	return 0;
 }
