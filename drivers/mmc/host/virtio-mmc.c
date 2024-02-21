@@ -70,66 +70,6 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 	.start_signal_voltage_switch = virtio_mmc_start_signal_voltage_switch,
 };
 
-static int create_dev_entry(struct virtmmc_data *data) {
-	return 0;
-	int err;
-
-	err = alloc_chrdev_region(
-		&data->devt, 
-		VIRTIO_MMC_FIRST_MINOR, 
-		VIRTIO_MMC_MINOR_COUNT, 
-		VIRTIO_MMC_DEV_NAME
-		);
-	if (err) {
-		printk(KERN_ERR "Failed to allocate char device region\n");
-		return err;
-	}
-
-	data->chardev_class = class_create("mmcblk");
-	if (IS_ERR(data->chardev_class)) {
-		printk(KERN_ERR "Failed to create class\n");
-		err = PTR_ERR(data->chardev_class);
-		goto free_chrdev_region;
-	}
-
-	cdev_init(&data->cdev, &virtio_mmc_dev_fops);
-	data->cdev.owner = THIS_MODULE;
-
-	int dev_major = MAJOR(data->devt);
-	err = cdev_add(&data->cdev, MKDEV(dev_major, VIRTIO_MMC_FIRST_MINOR), VIRTIO_MMC_MINOR_COUNT);
-	if (err) {
-		printk(KERN_ERR "Failed to add cdev\n");
-		goto free_cdev;
-	}
-
-	data->device = device_create(data->chardev_class, NULL, MKDEV(dev_major, VIRTIO_MMC_FIRST_MINOR), NULL, "mmcblk%d", 0);
-	if (IS_ERR(data->device)) {
-		printk(KERN_ERR "Failed to create device\n");
-		err = PTR_ERR(data->device);
-		goto free_chardev_class;
-	}
-
-	return 0;
-
-free_cdev:
-	cdev_del(&data->cdev);
-
-free_chardev_class:
-	class_destroy(data->chardev_class);
-
-free_chrdev_region:
-	unregister_chrdev_region(data->devt, VIRTIO_MMC_MINOR_COUNT);
-
-	return err;
-}
-
-static void dealloc_dev_entry(struct virtmmc_data *data) {
-	device_destroy(data->chardev_class, data->devt);
-	class_destroy(data->chardev_class);
-	cdev_del(&data->cdev);
-	unregister_chrdev_region(data->devt, VIRTIO_MMC_MINOR_COUNT);
-}
-
 static int create_host(struct virtmmc_data *data) {
 	int err;
 
@@ -172,17 +112,10 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 	data->vdev = vdev;
 	printk(KERN_INFO "virtio_mmc_probe: data allocated\n");
 
-	err = create_dev_entry(data);
-	if (err) {
-		printk(KERN_ERR "Failed to create device entry\n");
-		goto free_data;
-	}
-	printk(KERN_INFO "virtio_mmc_probe: device entry created\n");
-
 	err = create_host(data);
 	if(err) {
 		printk(KERN_ERR "Failed to make host\n");
-		goto free_dev_entry;
+		goto free_data;
 	}
 	printk(KERN_INFO "virtio_mmc_probe: mmc host created\n");
 
@@ -190,9 +123,6 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 
 // remove_host:
 // 	remove_host(data->mmc);
-
-free_dev_entry:
-	dealloc_dev_entry(data);
 
 free_data:
 	kfree(data);
@@ -206,8 +136,6 @@ static void virtio_mmc_remove(struct virtio_device *vdev) {
 	struct virtmmc_data *data = vdev->priv;
 
 	remove_host(data->mmc);
-
-	dealloc_dev_entry(data);
 
 	kfree(data);
 }
