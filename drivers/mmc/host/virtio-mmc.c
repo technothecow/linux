@@ -149,6 +149,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 		goto remove_host;
 	}
 
+	printk(KERN_INFO "virtio_mmc_probe finished\n");
 	return 0;
 
 remove_host:
