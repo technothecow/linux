@@ -100,6 +100,10 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 	.start_signal_voltage_switch = virtio_mmc_start_signal_voltage_switch,
 };
 
+static void virtio_mmc_vq_callback(struct virtqueue *vq) {
+	printk(KERN_INFO "virtio_mmc_vq_callback\n");
+}
+
 static int create_host(struct virtio_device *vdev) {
 	int err;
 
@@ -108,6 +112,16 @@ static int create_host(struct virtio_device *vdev) {
 	host->f_min = 100000;
 	host->f_max = 52000000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+
+	struct virtio_mmc_data *data = mmc_priv(host);
+
+	data->vq = virtio_find_single_vq(vdev, virtio_mmc_vq_callback, "vq_name");
+	if (!data->vq) {
+		printk(KERN_ERR "Failed to find virtqueue\n");
+		mmc_free_host(host);
+		return -ENODEV;
+	}
+	printk(KERN_INFO "virtio_mmc: virtqueue found\n");
 
 	err = mmc_add_host(host);
 	if (err) {
@@ -126,10 +140,6 @@ static void remove_host(struct mmc_host *host) {
 	mmc_free_host(host);
 }
 
-static void virtio_mmc_vq_callback(struct virtqueue *vq) {
-	printk(KERN_INFO "virtio_mmc_vq_callback\n");
-}
-
 static int virtio_mmc_probe(struct virtio_device *vdev) {
 	int err;
 	printk(KERN_INFO "virtio_mmc_probe\n");
@@ -142,18 +152,11 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 
 	struct virtio_mmc_data *data = mmc_priv(vdev->priv);
 
-	data->vq = virtio_find_single_vq(vdev, virtio_mmc_vq_callback, "vq_name");
-	if (!data->vq) {
-		printk(KERN_ERR "Failed to find virtqueue\n");
-		err = -ENODEV;
-		goto remove_host;
-	}
-
 	printk(KERN_INFO "virtio_mmc_probe finished\n");
 	return 0;
 
-remove_host:
-	remove_host(data->mmc);
+// remove_host:
+// 	remove_host(data->mmc);
 
 	return err;
 }
