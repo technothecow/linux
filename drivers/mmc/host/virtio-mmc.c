@@ -32,7 +32,11 @@ struct virtio_mmc_data {
 static void virtio_mmc_print_binary(const char *name, void *data, size_t size) {
 	printk(KERN_INFO "%s: ", name);
 	for(int i = 0; i < size; i++) {
-		printk(KERN_CONT "%02x ", ((unsigned char *)data)[i]);
+		unsigned char byte = ((unsigned char *)data)[i];
+		for (int j = 7; j >= 0; j--) {
+			printk(KERN_CONT "%d", (byte >> j) & 1);
+		}
+		printk(KERN_CONT " ");
 	}
 	printk(KERN_CONT "\n");
 }
