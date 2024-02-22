@@ -70,6 +70,15 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 	printk(KERN_INFO "virtio_mmc_set_ios\n");
+	if(!ios) {
+		printk(KERN_CRIT "virtio_mmc_set_ios: No ios\n");
+		return;
+	}
+
+	printk(KERN_INFO "Bus width: %d\n", ios->bus_width);
+	printk(KERN_INFO "Clock: %d\n", ios->clock);
+	printk(KERN_INFO "Power: %d\n", ios->power_mode);
+	printk(KERN_INFO "VDD: %d\n", ios->vdd);
 }
 
 static int virtio_mmc_get_ro(struct mmc_host *mmc) {
@@ -150,7 +159,8 @@ static int virtio_mmc_probe(struct virtio_device *vdev) {
 	}
 	printk(KERN_INFO "virtio_mmc_probe: mmc host created\n");
 
-	struct virtio_mmc_data *data = mmc_priv(vdev->priv);
+	// struct virtio_mmc_data *data = mmc_priv(vdev->priv);
+	
 
 	printk(KERN_INFO "virtio_mmc_probe finished\n");
 	return 0;
