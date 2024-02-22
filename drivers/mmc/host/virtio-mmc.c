@@ -81,6 +81,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 
 	printk(KERN_INFO "virtqueue_kick\n");
 	// virtqueue_kick(data->vq);
+	mrq->cmd->error = 0;
 	mmc_request_done(mmc, mrq);
 }
 
@@ -113,6 +114,15 @@ static void virtio_mmc_enable_sdio_irq(struct mmc_host *mmc, int enable) {
 
 static int virtio_mmc_start_signal_voltage_switch(struct mmc_host *mmc, struct mmc_ios *ios) {
 	printk(KERN_INFO "virtio_mmc_start_signal_voltage_switch\n");
+	if(!ios) {
+		printk(KERN_CRIT "virtio_mmc_set_ios: No ios\n");
+		return 1;
+	}
+
+	printk(KERN_INFO "Bus width: %d\n", ios->bus_width);
+	printk(KERN_INFO "Clock: %d\n", ios->clock);
+	printk(KERN_INFO "Power: %d\n", ios->power_mode);
+	printk(KERN_INFO "VDD: %d\n", ios->vdd);
 	return 0;
 }
 
