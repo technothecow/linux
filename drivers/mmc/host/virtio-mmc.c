@@ -1,6 +1,8 @@
 #include "virtio-mmc.h"
+#include "asm-generic/int-ll64.h"
 #include "linux/kern_levels.h"
 #include "linux/mmc/host.h"
+#include "linux/printk.h"
 #include "linux/scatterlist.h"
 #include "linux/virtio_config.h"
 #include <linux/virtio.h>
@@ -27,6 +29,14 @@ struct virtio_mmc_data {
 	struct cdev cdev;
 };
 
+static void virtio_mmc_print_binary(const char *name, void *data, size_t size) {
+	printk(KERN_INFO "%s: ", name);
+	for(int i = 0; i < size; i++) {
+		printk(KERN_CONT "%02x ", ((unsigned char *)data)[i]);
+	}
+	printk(KERN_CONT "\n");
+}
+
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	struct virtio_mmc_data *data = mmc_priv(mmc);
 	if(!data) {
@@ -36,8 +46,9 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 
 	printk(KERN_INFO "\nMMC Request details:\n");
 	if(mrq->cmd) {
-		printk(KERN_INFO "Command: %u\n", mrq->cmd->opcode);
-		printk(KERN_INFO "Argument: %u\n", mrq->cmd->arg);
+		virtio_mmc_print_binary("Opcode", &mrq->cmd->opcode, sizeof(u32));
+		virtio_mmc_print_binary("Arg", &mrq->cmd->arg, sizeof(u32));
+		virtio_mmc_print_binary("Flags", &mrq->cmd->flags, sizeof(u32));
 		data->req.opcode = mrq->cmd->opcode;
 		data->req.arg = mrq->cmd->arg;
 	} else {
@@ -65,8 +76,8 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	}
 
 	printk(KERN_INFO "virtqueue_kick\n");
-	virtqueue_kick(data->vq);
-	// mmc_request_done(mmc, mrq);
+	// virtqueue_kick(data->vq);
+	mmc_request_done(mmc, mrq);
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
