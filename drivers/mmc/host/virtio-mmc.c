@@ -34,18 +34,18 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 		return;
 	}
 
-	printk(KERN_INFO "MMC Request details:\n");
+	printk(KERN_INFO "\nMMC Request details:\n");
 	if(mrq->cmd) {
-		printk(KERN_INFO "Command: %d\n", mrq->cmd->opcode);
-		printk(KERN_INFO "Argument: %d\n", mrq->cmd->arg);
+		printk(KERN_INFO "Command: %u\n", mrq->cmd->opcode);
+		printk(KERN_INFO "Argument: %u\n", mrq->cmd->arg);
 		data->req.opcode = mrq->cmd->opcode;
 		data->req.arg = mrq->cmd->arg;
 	} else {
 		printk(KERN_INFO "Command: NULL\n");
 	}
 	if(mrq->data) {
-		printk(KERN_INFO "Data blocks: %d\n", mrq->data->blocks);
-		printk(KERN_INFO "Data block size: %d\n", mrq->data->blksz);
+		printk(KERN_INFO "Data blocks: %u\n", mrq->data->blocks);
+		printk(KERN_INFO "Data block size: %u\n", mrq->data->blksz);
 		printk(KERN_INFO "Data flags: %x\n", mrq->data->flags);
 		data->req.blocks = mrq->data->blocks;
 		data->req.blksz = mrq->data->blksz;
@@ -66,7 +66,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 
 	printk(KERN_INFO "virtqueue_kick\n");
 	virtqueue_kick(data->vq);
-	mmc_request_done(mmc, mrq);
+	// mmc_request_done(mmc, mrq);
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
