@@ -66,6 +66,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 
 	printk(KERN_INFO "virtqueue_kick\n");
 	virtqueue_kick(data->vq);
+	mmc_request_done(mmc, mrq);
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
