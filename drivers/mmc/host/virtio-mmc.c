@@ -38,6 +38,7 @@ static void virtio_mmc_print_binary(const char *name, void *data, size_t size) {
 		}
 		printk(KERN_CONT " ");
 	}
+	printk(KERN_CONT "%d", *(u32*)data);
 	printk(KERN_CONT "\n");
 }
 
@@ -80,7 +81,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	}
 
 	printk(KERN_INFO "virtqueue_kick\n");
-	// virtqueue_kick(data->vq);
+	virtqueue_kick(data->vq);
 	mrq->cmd->error = 0;
 	mmc_request_done(mmc, mrq);
 }
