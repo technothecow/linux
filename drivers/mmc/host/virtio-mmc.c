@@ -23,6 +23,8 @@ typedef struct virtio_mmc_data {
 	struct virtio_device *vdev;
 	struct mmc_host *mmc;
 	struct virtqueue *vq;
+	struct mmc_request *last_mrq;
+
 	struct scatterlist sg;
 	struct virtio_mmc_req req;
 	u8 response;
@@ -75,6 +77,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	if (data->req.opcode == MMC_SEND_OP_COND) {
 		printk(KERN_INFO "Sending response for MMC_SEND_OP_COND\n");
 		mrq->cmd->resp[0] = 0xFFFFFFFF;
+		return;
 	}
 
 	struct scatterlist sg_out_linux, sg_in_linux;
@@ -90,8 +93,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 
 	printk(KERN_INFO "virtqueue_kick\n");
 	virtqueue_kick(data->vq);
-	mrq->cmd->error = 0;
-	mmc_request_done(mmc, mrq);
+	data->last_mrq = mrq;
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
@@ -101,10 +103,10 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 		return;
 	}
 
-	printk(KERN_INFO "Bus width: %d\n", ios->bus_width);
-	printk(KERN_INFO "Clock: %d\n", ios->clock);
-	printk(KERN_INFO "Power: %d\n", ios->power_mode);
-	printk(KERN_INFO "VDD: %d\n", ios->vdd);
+	// printk(KERN_INFO "Bus width: %d\n", ios->bus_width);
+	// printk(KERN_INFO "Clock: %d\n", ios->clock);
+	// printk(KERN_INFO "Power: %d\n", ios->power_mode);
+	// printk(KERN_INFO "VDD: %d\n", ios->vdd);
 }
 
 static int virtio_mmc_get_ro(struct mmc_host *mmc) {
@@ -128,10 +130,10 @@ static int virtio_mmc_start_signal_voltage_switch(struct mmc_host *mmc, struct m
 		return 1;
 	}
 
-	printk(KERN_INFO "Bus width: %d\n", ios->bus_width);
-	printk(KERN_INFO "Clock: %d\n", ios->clock);
-	printk(KERN_INFO "Power: %d\n", ios->power_mode);
-	printk(KERN_INFO "VDD: %d\n", ios->vdd);
+	// printk(KERN_INFO "Bus width: %d\n", ios->bus_width);
+	// printk(KERN_INFO "Clock: %d\n", ios->clock);
+	// printk(KERN_INFO "Power: %d\n", ios->power_mode);
+	// printk(KERN_INFO "VDD: %d\n", ios->vdd);
 	return 0;
 }
 
@@ -156,6 +158,8 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	}
 
 	data->response = *response;
+	data->last_mrq->cmd->resp[0] = data->response;
+	mmc_request_done(data->mmc, data->last_mrq);
 }
 
 static int create_host(struct virtio_device *vdev) {
