@@ -80,7 +80,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	}
 
 	printk(KERN_INFO "virtqueue_kick\n");
-	// virtqueue_kick(data->vq);
+	virtqueue_kick(data->vq);
 	mrq->cmd->error = 0;
 	mmc_request_done(mmc, mrq);
 }
@@ -147,6 +147,8 @@ static int create_host(struct virtio_device *vdev) {
 	host->f_min = 100000;
 	host->f_max = 52000000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+	host->caps = MMC_CAP_4_BIT_DATA | MMC_CAP_SDIO_IRQ | MMC_CAP_MMC_HIGHSPEED;
+	host->caps2 = MMC_CAP2_NO_SDIO;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
 
