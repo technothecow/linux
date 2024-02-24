@@ -24,6 +24,7 @@ struct virtio_mmc_data {
 	struct virtqueue *vq;
 	struct scatterlist sg;
 	struct virtio_mmc_req req;
+	u8 response;
 
 	dev_t devt;
 	struct cdev cdev;
@@ -70,12 +71,13 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 		printk(KERN_INFO "Data: NULL\n");
 	}
 
-	struct scatterlist sg_in_qemu;
-	sg_init_one(&sg_in_qemu, &data->req, sizeof(struct virtio_mmc_req));
+	struct scatterlist sg_out_linux, sg_in_linux;
+	sg_init_one(&sg_out_linux, &data->req, sizeof(struct virtio_mmc_req));
+	sg_init_one(&sg_in_linux, &data->response, sizeof(u8));
 
-	struct scatterlist *request[] = {&sg_in_qemu};
+	struct scatterlist *request[] = {&sg_out_linux, &sg_in_linux};
 
-	if (virtqueue_add_sgs(data->vq, request, 1, 0, &sg_in_qemu, GFP_KERNEL) < 0) {
+	if (virtqueue_add_sgs(data->vq, request, 1, 1, &data->response, GFP_KERNEL) < 0) {
 		printk(KERN_CRIT "virtqueue_add_sgs failed\n");
 		return;
 	}
