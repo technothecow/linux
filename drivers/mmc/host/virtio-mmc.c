@@ -9,7 +9,6 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/fs.h>
-#include <stdint.h>
 
 struct virtio_mmc_req {
 	u32 opcode;
@@ -142,8 +141,9 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
 	virtio_mmc_data *data = vq->vdev->priv;
+	unsigned int len;
 
-	u8 *response = virtqueue_get_buf(vq, NULL);
+	u8 *response = virtqueue_get_buf(vq, &len);
 	if(!response) {
 		printk(KERN_ERR "virtio_mmc_vq_callback: No response\n");
 		return;
