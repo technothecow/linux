@@ -9,6 +9,7 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/fs.h>
+#include <stdint.h>
 
 struct virtio_mmc_req {
 	u32 opcode;
@@ -18,7 +19,7 @@ struct virtio_mmc_req {
 	u32 blksz;
 };
 
-struct virtio_mmc_data {
+typedef struct virtio_mmc_data {
 	struct virtio_device *vdev;
 	struct mmc_host *mmc;
 	struct virtqueue *vq;
@@ -28,7 +29,7 @@ struct virtio_mmc_data {
 
 	dev_t devt;
 	struct cdev cdev;
-};
+} virtio_mmc_data;
 
 static void virtio_mmc_print_binary(const char *name, void *data, size_t size) {
 	printk(KERN_INFO "%s: ", name);
@@ -140,6 +141,15 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 
 static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
+	virtio_mmc_data *data = vq->vdev->priv;
+
+	u8 *response = virtqueue_get_buf(vq, NULL);
+	if(!response) {
+		printk(KERN_ERR "virtio_mmc_vq_callback: No response\n");
+		return;
+	}
+
+	data->response = *response;
 }
 
 static int create_host(struct virtio_device *vdev) {
