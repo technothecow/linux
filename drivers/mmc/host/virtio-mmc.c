@@ -2,6 +2,7 @@
 #include "asm-generic/int-ll64.h"
 #include "linux/kern_levels.h"
 #include "linux/mmc/host.h"
+#include "linux/mmc/mmc.h"
 #include "linux/printk.h"
 #include "linux/scatterlist.h"
 #include "linux/virtio_config.h"
@@ -69,6 +70,11 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 		data->req.flags = mrq->data->flags;
 	} else {
 		printk(KERN_INFO "Data: NULL\n");
+	}
+
+	if (data->req.opcode == MMC_SEND_OP_COND) {
+		printk(KERN_INFO "Sending response for MMC_SEND_OP_COND\n");
+		mrq->cmd->resp[0] = 0xFFFFFFFF;
 	}
 
 	struct scatterlist sg_out_linux, sg_in_linux;
