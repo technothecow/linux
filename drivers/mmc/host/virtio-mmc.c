@@ -80,7 +80,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	}
 
 	printk(KERN_INFO "virtqueue_kick\n");
-	virtqueue_kick(data->vq);
+	// virtqueue_kick(data->vq);
 	mrq->cmd->error = 0;
 	mmc_request_done(mmc, mrq);
 }
