@@ -148,7 +148,16 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 
 static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
-	virtio_mmc_data *data = mmc_priv(vq->vdev->priv);
+	struct mmc_host *host = vq->vdev->priv;
+	if(!host) {
+		printk(KERN_ERR "virtio_mmc_vq_callback: No host\n");
+		return;
+	}
+	virtio_mmc_data *data = mmc_priv(host);
+	if(!data) {
+		printk(KERN_ERR "virtio_mmc_vq_callback: No data\n");
+		return;
+	}
 	unsigned int len;
 
 	u8 *response = virtqueue_get_buf(vq, &len);
