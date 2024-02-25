@@ -643,20 +643,26 @@ static int mmc_validate_host_caps(struct mmc_host *host)
  */
 int mmc_add_host(struct mmc_host *host)
 {
+	printk(KERN_INFO "host: initializing mmc");
 	int err;
-
+	
+	printk(KERN_INFO "host: validating host capabilities");
 	err = mmc_validate_host_caps(host);
 	if (err)
 		return err;
 
+	printk(KERN_INFO "host: adding host to device model");
 	err = device_add(&host->class_dev);
 	if (err)
 		return err;
 
+	printk(KERN_INFO "host: registering led trigger");
 	led_trigger_register_simple(dev_name(&host->class_dev), &host->led);
 
+	printk(KERN_INFO "host: adding host to debugfs");
 	mmc_add_host_debugfs(host);
 
+	printk(KERN_INFO "host: starting host");
 	mmc_start_host(host);
 	return 0;
 }
