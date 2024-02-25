@@ -2293,9 +2293,10 @@ int mmc_attach_mmc(struct mmc_host *host)
 
 	printk(KERN_INFO "mmc_attach_mmc: mmc_send_op_cond\n");
 	err = mmc_send_op_cond(host, 0, &ocr);
-	if (err)
+	if (err) {
 		printk(KERN_INFO "mmc_attach_mmc: mmc_send_op_cond failed with err = %d\n", err);
 		return err;
+	}
 
 	printk(KERN_INFO "mmc_attach_mmc: mmc_attach_bus\n");
 	mmc_attach_bus(host, &mmc_ops);
