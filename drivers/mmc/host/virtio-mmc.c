@@ -148,7 +148,7 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 
 static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
-	virtio_mmc_data *data = vq->vdev->priv;
+	virtio_mmc_data *data = mmc_priv(vq->vdev->priv);
 	unsigned int len;
 
 	u8 *response = virtqueue_get_buf(vq, &len);
@@ -157,11 +157,11 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 		return;
 	}
 
-	data->response = *response;
-	data->last_mrq->cmd->resp[0] = data->response;
-	data->last_mrq->cmd->error = 0; // causes a lot of errors
+	data->last_mrq->cmd->resp[0] = *response;
+	data->last_mrq->cmd->error = 0; // causes kernel panic
 	mmc_request_done(data->mmc, data->last_mrq);
 	printk(KERN_INFO "virtio_mmc_vq_callback: request done\n");
+	data->response = *response;
 }
 
 static int create_host(struct virtio_device *vdev) {
@@ -172,7 +172,7 @@ static int create_host(struct virtio_device *vdev) {
 	host->f_min = 100000;
 	host->f_max = 52000000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_SD;
+	// host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_SD;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
 
