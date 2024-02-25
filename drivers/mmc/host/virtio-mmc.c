@@ -30,6 +30,7 @@ typedef struct virtio_mmc_data {
 	struct mmc_request *last_mrq;
 
 	struct scatterlist sg;
+	virtio_mmc_req req;
 	u8 response;
 
 	dev_t devt;
@@ -49,36 +50,35 @@ static void virtio_mmc_print_binary(const char *name, void *data, size_t size) {
 	printk(KERN_CONT "\n");
 }
 
-static void virtio_mmc_send_request(virtio_mmc_req *req, struct virtqueue *vq, u8 *response) {
+static void virtio_mmc_send_request(virtio_mmc_data *data) {
 	struct scatterlist sg_out_linux, sg_in_linux;
-	sg_init_one(&sg_out_linux, req, sizeof(struct virtio_mmc_req));
-	sg_init_one(&sg_in_linux, response, sizeof(u8));
+	sg_init_one(&sg_out_linux, &data->req, sizeof(struct virtio_mmc_req));
+	sg_init_one(&sg_in_linux, &data->response, sizeof(u8));
 
 	struct scatterlist *request[] = {&sg_out_linux, &sg_in_linux};
 
-	if (virtqueue_add_sgs(vq, request, 1, 1, response, GFP_KERNEL) < 0) {
+	if (virtqueue_add_sgs(data->vq, request, 1, 1, &data->response, GFP_KERNEL) < 0) {
 		printk(KERN_CRIT "virtqueue_add_sgs failed\n");
 		return;
 	}
 
 	printk(KERN_INFO "virtqueue_kick\n");
-	virtqueue_kick(vq);
+	virtqueue_kick(data->vq);
 }
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	virtio_mmc_data *data = mmc_priv(mmc);
 	data->last_mrq = mrq;
 
-	virtio_mmc_req *req = kmalloc(sizeof(struct virtio_mmc_req), GFP_KERNEL);
-	req->is_request = true;
+	data->req.is_request = true;
 
 	printk(KERN_INFO "\nMMC Request details:\n");
 	if(mrq->cmd) {
 		virtio_mmc_print_binary("Opcode", &mrq->cmd->opcode, sizeof(u32));
 		virtio_mmc_print_binary("Arg", &mrq->cmd->arg, sizeof(u32));
 		virtio_mmc_print_binary("Flags", &mrq->cmd->flags, sizeof(u32));
-		req->opcode = mrq->cmd->opcode;
-		req->arg = mrq->cmd->arg;
+		data->req.opcode = mrq->cmd->opcode;
+		data->req.arg = mrq->cmd->arg;
 	} else {
 		printk(KERN_INFO "Command: NULL\n");
 	}
@@ -86,12 +86,12 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 		printk(KERN_INFO "Data blocks: %u\n", mrq->data->blocks);
 		printk(KERN_INFO "Data block size: %u\n", mrq->data->blksz);
 		printk(KERN_INFO "Data flags: %x\n", mrq->data->flags);
-		req->blocks = mrq->data->blocks;
-		req->blksz = mrq->data->blksz;
-		req->flags = mrq->data->flags;
+		data->req.blocks = mrq->data->blocks;
+		data->req.blksz = mrq->data->blksz;
+		data->req.flags = mrq->data->flags;
 	}
 
-	virtio_mmc_send_request(req, data->vq, &data->response);
+	virtio_mmc_send_request(data);
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
@@ -99,11 +99,11 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 	printk(KERN_INFO "VDD: %d\n", ios->vdd);
 
 	virtio_mmc_data *data = mmc_priv(mmc);
-	virtio_mmc_req *req = kmalloc(sizeof(struct virtio_mmc_req), GFP_KERNEL);
+	virtio_mmc_req *req = &data->req;
 	req->is_set_ios = true;
 	req->vdd = ios->vdd;
 
-	virtio_mmc_send_request(req, data->vq, &data->response);
+	virtio_mmc_send_request(data);
 }
 
 static int virtio_mmc_get_ro(struct mmc_host *mmc) {
