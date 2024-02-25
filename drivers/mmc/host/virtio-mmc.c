@@ -161,6 +161,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	data->last_mrq->cmd->resp[0] = data->response;
 	// data->last_mrq->cmd->error = 0;
 	mmc_request_done(data->mmc, data->last_mrq);
+	printk(KERN_INFO "virtio_mmc_vq_callback: request done\n");
 }
 
 static int create_host(struct virtio_device *vdev) {
