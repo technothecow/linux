@@ -2048,6 +2048,7 @@ EXPORT_SYMBOL(mmc_sw_reset);
 
 static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 {
+	printk(KERN_INFO "enter mmc_rescan_try_freq\n");
 	host->f_init = freq;
 
 	pr_debug("%s: %s: trying to init card at %u Hz\n",
@@ -2201,6 +2202,7 @@ EXPORT_SYMBOL(mmc_card_alternative_gpt_sector);
 
 void mmc_rescan(struct work_struct *work)
 {
+	printk(KERN_INFO "enter mmc_rescan\n");
 	struct mmc_host *host =
 		container_of(work, struct mmc_host, detect.work);
 	int i;
@@ -2221,6 +2223,7 @@ void mmc_rescan(struct work_struct *work)
 	}
 
 	/* Verify a registered card to be functional, else remove it. */
+	printk(KERN_INFO "mmc_rescan: checking if a card is present\n");
 	if (host->bus_ops)
 		host->bus_ops->detect(host);
 
@@ -2228,8 +2231,10 @@ void mmc_rescan(struct work_struct *work)
 
 	/* if there still is a card present, stop here */
 	if (host->bus_ops != NULL)
+		printk(KERN_INFO "mmc_rescan: card is not present\n");
 		goto out;
 
+	printk(KERN_INFO "mmc_rescan: card is present\n");
 	mmc_claim_host(host);
 	if (mmc_card_is_removable(host) && host->ops->get_cd &&
 			host->ops->get_cd(host) == 0) {
@@ -2239,13 +2244,16 @@ void mmc_rescan(struct work_struct *work)
 	}
 
 	/* If an SD express card is present, then leave it as is. */
+	printk(KERN_INFO "mmc_rescan: checking if an SD express card is present\n");
 	if (mmc_card_sd_express(host)) {
+		printk(KERN_INFO "mmc_rescan: an SD express card is present\n");
 		mmc_release_host(host);
 		goto out;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(freqs); i++) {
 		unsigned int freq = freqs[i];
+		printk(KERN_INFO "mmc_rescan: trying to init card at %u Hz\n", freq);
 		if (freq > host->f_max) {
 			if (i + 1 < ARRAY_SIZE(freqs))
 				continue;
