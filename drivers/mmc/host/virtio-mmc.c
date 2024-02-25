@@ -11,13 +11,17 @@
 #include <linux/device.h>
 #include <linux/fs.h>
 
-struct virtio_mmc_req {
+typedef struct virtio_mmc_req {
+	bool is_request;
 	u32 opcode;
 	u32 arg;
 	u32 flags;
 	u32 blocks;
 	u32 blksz;
-};
+
+    bool is_set_ios;
+    uint16_t vdd;
+} virtio_mmc_req ;
 
 typedef struct virtio_mmc_data {
 	struct virtio_device *vdev;
@@ -26,7 +30,6 @@ typedef struct virtio_mmc_data {
 	struct mmc_request *last_mrq;
 
 	struct scatterlist sg;
-	struct virtio_mmc_req req;
 	u8 response;
 
 	dev_t devt;
@@ -46,16 +49,36 @@ static void virtio_mmc_print_binary(const char *name, void *data, size_t size) {
 	printk(KERN_CONT "\n");
 }
 
+static void virtio_mmc_send_request(virtio_mmc_req *req, struct virtqueue *vq, u8 *response) {
+	struct scatterlist sg_out_linux, sg_in_linux;
+	sg_init_one(&sg_out_linux, req, sizeof(struct virtio_mmc_req));
+	sg_init_one(&sg_in_linux, response, sizeof(u8));
+
+	struct scatterlist *request[] = {&sg_out_linux, &sg_in_linux};
+
+	if (virtqueue_add_sgs(vq, request, 1, 1, response, GFP_KERNEL) < 0) {
+		printk(KERN_CRIT "virtqueue_add_sgs failed\n");
+		return;
+	}
+
+	printk(KERN_INFO "virtqueue_kick\n");
+	virtqueue_kick(vq);
+}
+
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
-	struct virtio_mmc_data *data = mmc_priv(mmc);
+	virtio_mmc_data *data = mmc_priv(mmc);
+	data->last_mrq = mrq;
+
+	virtio_mmc_req *req = kmalloc(sizeof(struct virtio_mmc_req), GFP_KERNEL);
+	req->is_request = true;
 
 	printk(KERN_INFO "\nMMC Request details:\n");
 	if(mrq->cmd) {
 		virtio_mmc_print_binary("Opcode", &mrq->cmd->opcode, sizeof(u32));
 		virtio_mmc_print_binary("Arg", &mrq->cmd->arg, sizeof(u32));
 		virtio_mmc_print_binary("Flags", &mrq->cmd->flags, sizeof(u32));
-		data->req.opcode = mrq->cmd->opcode;
-		data->req.arg = mrq->cmd->arg;
+		req->opcode = mrq->cmd->opcode;
+		req->arg = mrq->cmd->arg;
 	} else {
 		printk(KERN_INFO "Command: NULL\n");
 	}
@@ -63,38 +86,24 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 		printk(KERN_INFO "Data blocks: %u\n", mrq->data->blocks);
 		printk(KERN_INFO "Data block size: %u\n", mrq->data->blksz);
 		printk(KERN_INFO "Data flags: %x\n", mrq->data->flags);
-		data->req.blocks = mrq->data->blocks;
-		data->req.blksz = mrq->data->blksz;
-		data->req.flags = mrq->data->flags;
+		req->blocks = mrq->data->blocks;
+		req->blksz = mrq->data->blksz;
+		req->flags = mrq->data->flags;
 	}
 
-	struct scatterlist sg_out_linux, sg_in_linux;
-	sg_init_one(&sg_out_linux, &data->req, sizeof(struct virtio_mmc_req));
-	sg_init_one(&sg_in_linux, &data->response, sizeof(u8));
-
-	struct scatterlist *request[] = {&sg_out_linux, &sg_in_linux};
-
-	if (virtqueue_add_sgs(data->vq, request, 1, 1, &data->response, GFP_KERNEL) < 0) {
-		printk(KERN_CRIT "virtqueue_add_sgs failed\n");
-		return;
-	}
-
-	data->last_mrq = mrq;
-	printk(KERN_INFO "virtqueue_kick\n");
-	virtqueue_kick(data->vq);
+	virtio_mmc_send_request(req, data->vq, &data->response);
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 	printk(KERN_INFO "virtio_mmc_set_ios\n");
-	if(!ios) {
-		printk(KERN_CRIT "virtio_mmc_set_ios: No ios\n");
-		return;
-	}
+	printk(KERN_INFO "VDD: %d\n", ios->vdd);
 
-	// printk(KERN_INFO "Bus width: %d\n", ios->bus_width);
-	// printk(KERN_INFO "Clock: %d\n", ios->clock);
-	// printk(KERN_INFO "Power: %d\n", ios->power_mode);
-	// printk(KERN_INFO "VDD: %d\n", ios->vdd);
+	virtio_mmc_data *data = mmc_priv(mmc);
+	virtio_mmc_req *req = kmalloc(sizeof(struct virtio_mmc_req), GFP_KERNEL);
+	req->is_set_ios = true;
+	req->vdd = ios->vdd;
+
+	virtio_mmc_send_request(req, data->vq, &data->response);
 }
 
 static int virtio_mmc_get_ro(struct mmc_host *mmc) {
