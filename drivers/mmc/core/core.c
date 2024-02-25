@@ -2279,17 +2279,12 @@ void mmc_start_host(struct mmc_host *host)
 	host->f_init = max(min(freqs[0], host->f_max), host->f_min);
 	host->rescan_disable = 0;
 
-	printk(KERN_INFO "mmc_start_host: !(host->caps2 & MMC_CAP2_NO_PRESCAN_POWERUP) = %d\n", !(host->caps2 & MMC_CAP2_NO_PRESCAN_POWERUP));
 	if (!(host->caps2 & MMC_CAP2_NO_PRESCAN_POWERUP)) {
-		printk(KERN_INFO "mmc_start_host: mmc_claim_host\n");
 		mmc_claim_host(host);
-		printk(KERN_INFO "mmc_start_host: mmc_power_up\n");
 		mmc_power_up(host, host->ocr_avail);
-		printk(KERN_INFO "mmc_start_host: mmc_release_host\n");
 		mmc_release_host(host);
 	}
 
-	printk(KERN_INFO "mmc_start_host: host->slot.cd_irq >= 0 = %d\n", host->slot.cd_irq);
 	mmc_gpiod_request_cd_irq(host);
 	_mmc_detect_change(host, 0, false);
 }

@@ -2286,14 +2286,18 @@ int mmc_attach_mmc(struct mmc_host *host)
 
 	WARN_ON(!host->claimed);
 
+	printk(KERN_INFO "mmc_attach_mmc: !mmc_host_is_spi(host) = %d\n", !mmc_host_is_spi(host));
 	/* Set correct bus mode for MMC before attempting attach */
 	if (!mmc_host_is_spi(host))
 		mmc_set_bus_mode(host, MMC_BUSMODE_OPENDRAIN);
 
+	printk(KERN_INFO "mmc_attach_mmc: mmc_send_op_cond\n");
 	err = mmc_send_op_cond(host, 0, &ocr);
 	if (err)
+		printk(KERN_INFO "mmc_attach_mmc: mmc_send_op_cond failed with err = %d\n", err);
 		return err;
 
+	printk(KERN_INFO "mmc_attach_mmc: mmc_attach_bus\n");
 	mmc_attach_bus(host, &mmc_ops);
 	if (host->ocr_avail_mmc)
 		host->ocr_avail = host->ocr_avail_mmc;
@@ -2301,13 +2305,16 @@ int mmc_attach_mmc(struct mmc_host *host)
 	/*
 	 * We need to get OCR a different way for SPI.
 	 */
+	printk(KERN_INFO "mmc_attach_mmc: mmc_host_is_spi(host) = %d\n", mmc_host_is_spi(host));
 	if (mmc_host_is_spi(host)) {
 		err = mmc_spi_read_ocr(host, 1, &ocr);
 		if (err)
 			goto err;
 	}
 
+	printk(KERN_INFO "mmc_attach_mmc: mmc_select_voltage\n");
 	rocr = mmc_select_voltage(host, ocr);
+	printk(KERN_INFO "mmc_attach_mmc: rocr = %d\n", rocr);
 
 	/*
 	 * Can we support the voltage of the card?
@@ -2320,15 +2327,23 @@ int mmc_attach_mmc(struct mmc_host *host)
 	/*
 	 * Detect and init the card.
 	 */
+	printk(KERN_INFO "mmc_attach_mmc: mmc_init_card\n");
 	err = mmc_init_card(host, rocr, NULL);
-	if (err)
+	if (err) {
+		printk(KERN_INFO "mmc_attach_mmc: mmc_init_card failed with err = %d\n", err);
 		goto err;
+	}
 
+	printk(KERN_INFO "mmc_attach_mmc: mmc_release_host\n");
 	mmc_release_host(host);
+	printk(KERN_INFO "mmc_attach_mmc: mmc_add_card\n");
 	err = mmc_add_card(host->card);
-	if (err)
+	if (err) {
+		printk(KERN_INFO "mmc_attach_mmc: mmc_add_card failed with err = %d\n", err);
 		goto remove_card;
+	}
 
+	printk(KERN_INFO "mmc_attach_mmc: mmc_claim_host\n");
 	mmc_claim_host(host);
 	return 0;
 
