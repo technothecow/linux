@@ -166,11 +166,16 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 		return;
 	}
 
+	printk(KERN_INFO "virtio_mmc_vq_callback: filling response\n");
 	data->last_mrq->cmd->resp[0] = *response;
 	data->last_mrq->cmd->error = 0; // causes kernel panic
-	mmc_request_done(data->mmc, data->last_mrq);
+	printk(KERN_INFO "virtio_mmc_vq_callback: response filled\n");
+	if(!data->last_mrq) {
+		printk(KERN_ERR "virtio_mmc_vq_callback: No last_mrq\n");
+		return;
+	}
+	mmc_request_done(host, data->last_mrq);
 	printk(KERN_INFO "virtio_mmc_vq_callback: request done\n");
-	data->response = *response;
 }
 
 static int create_host(struct virtio_device *vdev) {
