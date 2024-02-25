@@ -159,6 +159,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 
 	data->response = *response;
 	data->last_mrq->cmd->resp[0] = data->response;
+	data->last_mrq->cmd->error = 0;
 	mmc_request_done(data->mmc, data->last_mrq);
 }
 
