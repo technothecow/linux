@@ -138,8 +138,10 @@ EXPORT_SYMBOL(mmc_command_done);
  */
 void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 {
+	printk(KERN_INFO "mmc_request_done\n");
 	struct mmc_command *cmd = mrq->cmd;
 	int err = cmd->error;
+	printk(KERN_INFO "err: %d\n", err);
 
 	/* Flag re-tuning needed on CRC errors */
 	if (!mmc_op_tuning(cmd->opcode) &&
@@ -157,8 +159,10 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 	if (host->ongoing_mrq == mrq)
 		host->ongoing_mrq = NULL;
 
+	printk(KERN_INFO "mmc_request_done 2\n");
 	mmc_complete_cmd(mrq);
 
+	printk(KERN_INFO "mmc_request_done 3\n");
 	trace_mmc_request_done(host, mrq);
 
 	/*
@@ -171,6 +175,7 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 	 *   if there are errors or retries)
 	 */
 	if (!err || !cmd->retries || mmc_card_removed(host->card)) {
+		printk(KERN_INFO "mmc_request_done 4\n");
 		mmc_should_fail_request(host, mrq);
 
 		if (!host->ongoing_mrq)
@@ -207,6 +212,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 	 * Request starter must handle retries - see
 	 * mmc_wait_for_req_done().
 	 */
+
+	printk(KERN_INFO "mmc_request_done 5\n");
 	if (mrq->done)
 		mrq->done(mrq);
 }
@@ -334,6 +341,7 @@ static int mmc_mrq_prep(struct mmc_host *host, struct mmc_request *mrq)
 
 int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 {
+	printk(KERN_INFO "mmc_start_request\n");
 	int err;
 
 	init_completion(&mrq->cmd_completion);
