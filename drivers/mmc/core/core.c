@@ -2054,12 +2054,14 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	pr_debug("%s: %s: trying to init card at %u Hz\n",
 		mmc_hostname(host), __func__, host->f_init);
 
+	printk(KERN_INFO "mmc_rescan_try_freq: mmc_power_up\n");
 	mmc_power_up(host, host->ocr_avail);
 
 	/*
 	 * Some eMMCs (with VCCQ always on) may not be reset after power up, so
 	 * do a hardware reset if possible.
 	 */
+	printk(KERN_INFO "mmc_rescan_try_freq: mmc_hw_reset\n");
 	mmc_hw_reset_for_init(host);
 
 	/*
@@ -2071,6 +2073,7 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	if (!(host->caps2 & MMC_CAP2_NO_SDIO))
 		sdio_reset(host);
 
+	printk(KERN_INFO "mmc_rescan_try_freq: mmc_go_idle\n");
 	mmc_go_idle(host);
 
 	if (!(host->caps2 & MMC_CAP2_NO_SD)) {
@@ -2082,16 +2085,19 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 
 	/* Order's important: probe SDIO, then SD, then MMC */
 	if (!(host->caps2 & MMC_CAP2_NO_SDIO))
+		{printk(KERN_INFO "mmc_rescan_try_freq: mmc_attach_sdio\n");
 		if (!mmc_attach_sdio(host))
-			return 0;
+			return 0;}
 
-	if (!(host->caps2 & MMC_CAP2_NO_SD))
+	if (!(host->caps2 & MMC_CAP2_NO_SD)) 
+		{printk(KERN_INFO "mmc_rescan_try_freq: mmc_attach_sd\n");
 		if (!mmc_attach_sd(host))
-			return 0;
+			return 0;}
 
 	if (!(host->caps2 & MMC_CAP2_NO_MMC))
+		{printk(KERN_INFO "mmc_rescan_try_freq: mmc_attach_mmc\n");
 		if (!mmc_attach_mmc(host))
-			return 0;
+			return 0;}
 
 out:
 	mmc_power_off(host);
