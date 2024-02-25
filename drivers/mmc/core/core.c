@@ -2084,6 +2084,7 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	printk(KERN_INFO "mmc_rescan_try_freq: mmc_go_idle\n");
 	mmc_go_idle(host);
 
+	printk(KERN_INFO "mmc_rescan_try_freq: !(host->caps2 & MMC_CAP2_NO_SD) = %d\n", !(host->caps2 & MMC_CAP2_NO_SD));
 	if (!(host->caps2 & MMC_CAP2_NO_SD)) {
 		if (mmc_send_if_cond_pcie(host, host->ocr_avail))
 			goto out;

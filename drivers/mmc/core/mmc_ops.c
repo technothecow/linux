@@ -167,10 +167,13 @@ int mmc_go_idle(struct mmc_host *host)
 	cmd.arg = 0;
 	cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_NONE | MMC_CMD_BC;
 
+	printk(KERN_INFO "Sending GO_IDLE_STATE\n");
 	err = mmc_wait_for_cmd(host, &cmd, 0);
+	printk(KERN_INFO "GO_IDLE_STATE done, err = %d\n", err);
 
 	mmc_delay(1);
 
+	printk(KERN_INFO "mmc_go_idle: !mmc_host_is_spi(host) = %d\n", !mmc_host_is_spi(host));
 	if (!mmc_host_is_spi(host)) {
 		mmc_set_chip_select(host, MMC_CS_DONTCARE);
 		mmc_delay(1);
