@@ -192,8 +192,6 @@ static int create_host(struct virtio_device *vdev) {
 		return err;
 	}
 	
-	host->card->type = MMC_TYPE_MMC;
-
 	vdev->priv = host;
 
 	return 0;

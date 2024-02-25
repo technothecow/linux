@@ -2230,9 +2230,10 @@ void mmc_rescan(struct work_struct *work)
 	host->detect_change = 0;
 
 	/* if there still is a card present, stop here */
-	if (host->bus_ops != NULL)
+	if (host->bus_ops != NULL) {
 		printk(KERN_INFO "mmc_rescan: card is not present\n");
 		goto out;
+	}
 
 	printk(KERN_INFO "mmc_rescan: card is present\n");
 	mmc_claim_host(host);
