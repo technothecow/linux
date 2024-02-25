@@ -48,10 +48,6 @@ static void virtio_mmc_print_binary(const char *name, void *data, size_t size) {
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	struct virtio_mmc_data *data = mmc_priv(mmc);
-	if(!data) {
-		printk(KERN_CRIT "request: No data in mmc_priv\n");
-		return;
-	}
 
 	printk(KERN_INFO "\nMMC Request details:\n");
 	if(mrq->cmd) {
@@ -70,14 +66,6 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 		data->req.blocks = mrq->data->blocks;
 		data->req.blksz = mrq->data->blksz;
 		data->req.flags = mrq->data->flags;
-	} else {
-		printk(KERN_INFO "Data: NULL\n");
-	}
-
-	if (data->req.opcode == MMC_SEND_OP_COND) {
-		printk(KERN_INFO "Sending response for MMC_SEND_OP_COND\n");
-		mrq->cmd->resp[0] = 0xFFFFFFFF;
-		return;
 	}
 
 	struct scatterlist sg_out_linux, sg_in_linux;
@@ -91,9 +79,9 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 		return;
 	}
 
+	data->last_mrq = mrq;
 	printk(KERN_INFO "virtqueue_kick\n");
 	virtqueue_kick(data->vq);
-	data->last_mrq = mrq;
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
@@ -149,15 +137,7 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
 	struct mmc_host *host = vq->vdev->priv;
-	if(!host) {
-		printk(KERN_ERR "virtio_mmc_vq_callback: No host\n");
-		return;
-	}
 	virtio_mmc_data *data = mmc_priv(host);
-	if(!data) {
-		printk(KERN_ERR "virtio_mmc_vq_callback: No data\n");
-		return;
-	}
 	unsigned int len;
 
 	u8 *response = virtqueue_get_buf(vq, &len);
@@ -166,14 +146,8 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 		return;
 	}
 
-	printk(KERN_INFO "virtio_mmc_vq_callback: filling response\n");
 	data->last_mrq->cmd->resp[0] = *response;
-	data->last_mrq->cmd->error = 0; // causes kernel panic
-	printk(KERN_INFO "virtio_mmc_vq_callback: response filled\n");
-	if(!data->last_mrq) {
-		printk(KERN_ERR "virtio_mmc_vq_callback: No last_mrq\n");
-		return;
-	}
+	data->last_mrq->cmd->error = 0;
 	mmc_request_done(host, data->last_mrq);
 	printk(KERN_INFO "virtio_mmc_vq_callback: request done\n");
 }
@@ -186,7 +160,7 @@ static int create_host(struct virtio_device *vdev) {
 	host->f_min = 100000;
 	host->f_max = 52000000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-	// host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_SD;
+	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_SD;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
 
