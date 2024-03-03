@@ -101,6 +101,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 	printk(KERN_INFO "virtio_mmc_set_ios\n");
 	printk(KERN_INFO "VDD: %d\n", ios->vdd);
+	printk(KERN_INFO "Clock: %d\n", ios->clock);
 
 	virtio_mmc_data *data = mmc_priv(mmc);
 	if(!data) {
@@ -109,7 +110,7 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 	}
 	virtio_mmc_req *req = &data->req;
 	req->is_set_ios = true;
-	req->vdd = ios->vdd;
+	req->vdd = ios->clock;
 
 	virtio_mmc_send_request(data);
 }
@@ -154,6 +155,10 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
 	struct mmc_host *host = vq->vdev->priv;
+	if(!host) {
+		printk(KERN_CRIT "virtio_mmc_vq_callback: No host\n");
+		return;
+	}
 	virtio_mmc_data *data = mmc_priv(host);
 	if(!data) {
 		printk(KERN_CRIT "virtio_mmc_vq_callback: No data\n");
@@ -184,6 +189,7 @@ static int create_host(struct virtio_device *vdev) {
 	int err;
 
 	struct mmc_host *host = mmc_alloc_host(sizeof(struct virtio_mmc_data), &vdev->dev);
+	vdev->priv = host;
 	host->ops = &virtio_mmc_host_ops;
 	host->f_min = 100000;
 	host->f_max = 52000000;
@@ -206,8 +212,6 @@ static int create_host(struct virtio_device *vdev) {
 		mmc_free_host(host);
 		return err;
 	}
-	
-	vdev->priv = host;
 
 	return 0;
 }
