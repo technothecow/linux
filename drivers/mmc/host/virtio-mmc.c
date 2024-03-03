@@ -155,6 +155,10 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
 	struct mmc_host *host = vq->vdev->priv;
 	virtio_mmc_data *data = mmc_priv(host);
+	if(!data) {
+		printk(KERN_CRIT "virtio_mmc_vq_callback: No data\n");
+		return;
+	}
 	unsigned int len;
 
 	u8 *response = virtqueue_get_buf(vq, &len);
@@ -163,10 +167,15 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 		return;
 	}
 
-	if(data->req.is_request) {
+	if(data->req.is_request && data->last_mrq) {
+		if(!data->last_mrq->cmd) {
+			printk(KERN_ERR "virtio_mmc_vq_callback: No command\n");
+			return;
+		}
 		data->last_mrq->cmd->resp[0] = *response;
 		data->last_mrq->cmd->error = 0;
 		mmc_request_done(host, data->last_mrq);
+		data->last_mrq = NULL;
 		printk(KERN_INFO "virtio_mmc_vq_callback: request done\n");
 	}
 }
