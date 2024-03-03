@@ -68,6 +68,10 @@ static void virtio_mmc_send_request(virtio_mmc_data *data) {
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 	virtio_mmc_data *data = mmc_priv(mmc);
+	if(!data) {
+		printk(KERN_CRIT "virtio_mmc_request: No data\n");
+		return;
+	}
 	data->last_mrq = mrq;
 
 	data->req.is_request = true;
@@ -99,6 +103,10 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 	printk(KERN_INFO "VDD: %d\n", ios->vdd);
 
 	virtio_mmc_data *data = mmc_priv(mmc);
+	if(!data) {
+		printk(KERN_CRIT "virtio_mmc_set_ios: No data\n");
+		return;
+	}
 	virtio_mmc_req *req = &data->req;
 	req->is_set_ios = true;
 	req->vdd = ios->vdd;
@@ -155,10 +163,12 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 		return;
 	}
 
-	data->last_mrq->cmd->resp[0] = *response;
-	data->last_mrq->cmd->error = 0;
-	mmc_request_done(host, data->last_mrq);
-	printk(KERN_INFO "virtio_mmc_vq_callback: request done\n");
+	if(data->req.is_request) {
+		data->last_mrq->cmd->resp[0] = *response;
+		data->last_mrq->cmd->error = 0;
+		mmc_request_done(host, data->last_mrq);
+		printk(KERN_INFO "virtio_mmc_vq_callback: request done\n");
+	}
 }
 
 static int create_host(struct virtio_device *vdev) {
