@@ -101,7 +101,6 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 	printk(KERN_INFO "virtio_mmc_set_ios\n");
 	printk(KERN_INFO "VDD: %d\n", ios->vdd);
-	printk(KERN_INFO "Clock: %d\n", ios->clock);
 
 	virtio_mmc_data *data = mmc_priv(mmc);
 	if(!data) {
@@ -110,7 +109,7 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios) {
 	}
 	virtio_mmc_req *req = &data->req;
 	req->is_set_ios = true;
-	req->vdd = ios->clock;
+	req->vdd = ios->vdd;
 
 	virtio_mmc_send_request(data);
 }
@@ -155,33 +154,17 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
 	struct mmc_host *host = vq->vdev->priv;
-	if(!host) {
-		printk(KERN_CRIT "virtio_mmc_vq_callback: No host\n");
-		return;
-	}
 	virtio_mmc_data *data = mmc_priv(host);
-	if(!data) {
-		printk(KERN_CRIT "virtio_mmc_vq_callback: No data\n");
-		return;
-	}
 	unsigned int len;
 
 	u8 *response = virtqueue_get_buf(vq, &len);
-	if(!response) {
-		printk(KERN_ERR "virtio_mmc_vq_callback: No response\n");
-		return;
-	}
 
 	if(data->req.is_request && data->last_mrq) {
-		if(!data->last_mrq->cmd) {
-			printk(KERN_ERR "virtio_mmc_vq_callback: No command\n");
-			return;
-		}
 		data->last_mrq->cmd->resp[0] = *response;
 		data->last_mrq->cmd->error = 0;
 		mmc_request_done(host, data->last_mrq);
 		data->last_mrq = NULL;
-		printk(KERN_INFO "virtio_mmc_vq_callback: request done\n");
+		printk(KERN_INFO "virtio_mmc_vq_callback: request done, response = %d\n", *response);
 	}
 }
 
