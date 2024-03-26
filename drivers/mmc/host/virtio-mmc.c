@@ -60,7 +60,7 @@ static void virtio_mmc_print_binary(const char *name, void *data, size_t size) {
 static void virtio_mmc_send_request(virtio_mmc_data *data) {
 	struct scatterlist sg_out_linux, sg_in_linux;
 	sg_init_one(&sg_out_linux, &data->req, sizeof(struct virtio_mmc_req));
-	sg_init_one(&sg_in_linux, &data->response, sizeof(u8));
+	sg_init_one(&sg_in_linux, &data->response, sizeof(struct virtio_mmc_resp));
 
 	struct scatterlist *request[] = {&sg_out_linux, &sg_in_linux};
 

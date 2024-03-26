@@ -201,6 +201,7 @@ int mmc_send_if_cond(struct mmc_host *host, u32 ocr)
 
 int mmc_send_if_cond_pcie(struct mmc_host *host, u32 ocr)
 {
+	printk(KERN_INFO "mmc_send_if_cond_pcie\n");
 	u32 resp = 0;
 	u8 pcie_bits = 0;
 	int ret;
@@ -212,13 +213,19 @@ int mmc_send_if_cond_pcie(struct mmc_host *host, u32 ocr)
 			/* Probe also for 1.2V support. */
 			pcie_bits = 0x30;
 	}
+	printk(KERN_INFO "mmc_send_if_cond_pcie: pcie_bits = %x\n", pcie_bits);
 
+	printk("mmc_send_if_cond_pcie: __mmc_send_if_cond\n");
 	ret = __mmc_send_if_cond(host, ocr, pcie_bits, &resp);
 	if (ret)
+		printk(KERN_ERR "mmc_send_if_cond_pcie: __mmc_send_if_cond failed\n");
 		return 0;
+	printk(KERN_INFO "mmc_send_if_cond_pcie: __mmc_send_if_cond done, resp = %x\n", resp);
+
 
 	/* Continue with the SD express init, if the card supports it. */
 	resp &= 0x3000;
+	printk(KERN_INFO "mmc_send_if_cond_pcie: resp && pcie_bits = %d\n", resp && pcie_bits);
 	if (pcie_bits && resp) {
 		if (resp == 0x3000)
 			host->ios.timing = MMC_TIMING_SD_EXP_1_2V;

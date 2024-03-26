@@ -2081,11 +2081,14 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	printk(KERN_INFO "mmc_rescan_try_freq: !(host->caps2 & MMC_CAP2_NO_SD) = %d\n", !(host->caps2 & MMC_CAP2_NO_SD));
 	if (!(host->caps2 & MMC_CAP2_NO_SD)) {
 		if (mmc_send_if_cond_pcie(host, host->ocr_avail))
+			printk(KERN_INFO "mmc_rescan_try_freq: mmc_send_if_cond_pcie goto\n");
 			goto out;
 		if (mmc_card_sd_express(host))
+			printk(KERN_INFO "mmc_rescan_try_freq: mmc_card_sd_express return\n");
 			return 0;
 	}
 
+	printk(KERN_INFO "mmc_rescan_try_freq: going by order\n");
 	/* Order's important: probe SDIO, then SD, then MMC */
 	if (!(host->caps2 & MMC_CAP2_NO_SDIO))
 		{printk(KERN_INFO "mmc_rescan_try_freq: mmc_attach_sdio\n");
