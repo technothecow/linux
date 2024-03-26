@@ -21,7 +21,11 @@ typedef struct virtio_mmc_req {
 
     bool is_set_ios;
     uint16_t vdd;
-} virtio_mmc_req ;
+} virtio_mmc_req;
+
+typedef struct virtio_mmc_resp {
+	u8 response[4];
+} virtio_mmc_resp;
 
 typedef struct virtio_mmc_data {
 	struct virtio_device *vdev;
@@ -157,14 +161,16 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	virtio_mmc_data *data = mmc_priv(host);
 	unsigned int len;
 
-	u8 *response = virtqueue_get_buf(vq, &len);
+	virtio_mmc_resp *response = virtqueue_get_buf(vq, &len);
 
 	if(data->req.is_request && data->last_mrq) {
-		data->last_mrq->cmd->resp[0] = *response;
+		for(int i=0;i<4;i++) {
+			data->last_mrq->cmd->resp[i] = response->response[i];
+		}
 		data->last_mrq->cmd->error = 0;
 		mmc_request_done(host, data->last_mrq);
 		data->last_mrq = NULL;
-		printk(KERN_INFO "virtio_mmc_vq_callback: request done, response = %d\n", *response);
+		printk(KERN_INFO "virtio_mmc_vq_callback: request done, response = %x, %x, %x, %x\n", response->response[0], response->response[1], response->response[2], response->response[3]);
 	}
 }
 
@@ -177,7 +183,7 @@ static int create_host(struct virtio_device *vdev) {
 	host->f_min = 100000;
 	host->f_max = 52000000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_SD;
+	host->caps2 = MMC_CAP2_NO_SDIO;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
 
