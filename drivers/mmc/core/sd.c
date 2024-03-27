@@ -1833,7 +1833,7 @@ int mmc_attach_sd(struct mmc_host *host)
 
 	printk(KERN_INFO "mmc_attach_sd: sending APP OP COND\n");
 	err = mmc_send_app_op_cond(host, 0, &ocr);
-	printk(KERN_INFO "mmc_attach_sd: mmc_send_app_op_cond returned %d\n", err);
+	printk(KERN_INFO "mmc_attach_sd: mmc_send_app_op_cond returned %d; ocr = %x\n", err, ocr);
 	if (err)
 		return err;
 
@@ -1861,8 +1861,11 @@ int mmc_attach_sd(struct mmc_host *host)
 	 * Some SD cards claims an out of spec VDD voltage range. Let's treat
 	 * these bits as being in-valid and especially also bit7.
 	 */
+	printk(KERN_INFO "ocr before change: %x; ", ocr);
 	ocr &= ~0x7FFF;
+	printk(KERN_CONT "ocr after change: %x\n", ocr);
 
+	printk(KERN_INFO "mmc_attach_sd: mmc_select_voltage\n");
 	rocr = mmc_select_voltage(host, ocr);
 
 	/*

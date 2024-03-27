@@ -24,7 +24,7 @@ typedef struct virtio_mmc_req {
 } virtio_mmc_req;
 
 typedef struct virtio_mmc_resp {
-	u8 response[4];
+	u32 response[4];
 	int resp_len;
 } virtio_mmc_resp;
 

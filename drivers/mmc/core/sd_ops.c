@@ -117,6 +117,7 @@ int mmc_app_set_bus_width(struct mmc_card *card, int width)
 
 int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 {
+	printk(KERN_INFO "mmc_send_app_op_cond\n");
 	struct mmc_command cmd = {};
 	int i, err = 0;
 
@@ -128,13 +129,17 @@ int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 	cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R3 | MMC_CMD_BCR;
 
 	for (i = 100; i; i--) {
+		printk(KERN_INFO "mmc_send_app_op_cond: mmc_wait_for_app_cmd\n");
 		err = mmc_wait_for_app_cmd(host, NULL, &cmd);
+		printk(KERN_INFO "mmc_send_app_op_cond: mmc_wait_for_app_cmd done; resp[0] = %x, resp[1] = %x; err = %d\n", cmd.resp[0], cmd.resp[1], err);
 		if (err)
 			break;
 
 		/* if we're just probing, do a single pass */
-		if (ocr == 0)
+		if (ocr == 0) {
+			printk(KERN_INFO "mmc_send_app_op_cond: we're just probing, do a single pass\n");
 			break;
+		}
 
 		/* otherwise wait until reset completes */
 		if (mmc_host_is_spi(host)) {
@@ -153,8 +158,10 @@ int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 	if (!i)
 		pr_err("%s: card never left busy state\n", mmc_hostname(host));
 
-	if (rocr && !mmc_host_is_spi(host))
+	if (rocr && !mmc_host_is_spi(host)) {
+		printk(KERN_INFO "mmc_send_app_op_cond: rocr = %x\n", cmd.resp[0]);
 		*rocr = cmd.resp[0];
+	}
 
 	return err;
 }
@@ -178,14 +185,17 @@ static int __mmc_send_if_cond(struct mmc_host *host, u32 ocr, u8 pcie_bits,
 	cmd.flags = MMC_RSP_SPI_R7 | MMC_RSP_R7 | MMC_CMD_BCR;
 
 	err = mmc_wait_for_cmd(host, &cmd, 0);
-	printk(KERN_INFO "__mmc_send_if_cond: mmc_wait_for_cmd done; err = %d\n", err);
+	printk(KERN_INFO "__mmc_send_if_cond: mmc_wait_for_cmd done; resp[0] = %x, resp[1] = %x; err = %d\n", cmd.resp[0], cmd.resp[1], err);
 	if (err)
 		return err;
 
-	if (mmc_host_is_spi(host))
+	if (mmc_host_is_spi(host)) {
+		printk(KERN_INFO "__mmc_send_if_cond: SPI host, result_pattern = %x\n", cmd.resp[1] & 0xFF);
 		result_pattern = cmd.resp[1] & 0xFF;
-	else
+	} else {
+		printk(KERN_INFO "__mmc_send_if_cond: non-SPI host, result_pattern = %x\n", cmd.resp[0] & 0xFF);
 		result_pattern = cmd.resp[0] & 0xFF;
+	}
 
 	if (result_pattern != test_pattern)
 		return -EIO;
