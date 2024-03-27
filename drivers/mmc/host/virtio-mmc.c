@@ -18,6 +18,8 @@ typedef struct virtio_mmc_req {
 	u32 flags;
 	u32 blocks;
 	u32 blksz;
+	bool is_data;
+	bool is_write;
 
 	bool is_set_ios;
 	uint16_t vdd;
@@ -26,6 +28,7 @@ typedef struct virtio_mmc_req {
 typedef struct virtio_mmc_resp {
 	u32 response[4];
 	int resp_len;
+	u8 buf[1024];
 } virtio_mmc_resp;
 
 typedef struct virtio_mmc_data {
@@ -72,7 +75,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	data->req.is_request = true;
 
-	printk(KERN_INFO "\nMMC Request details:\n");
+	// printk(KERN_INFO "\nMMC Request details:\n");
 	if (mrq->cmd) {
 		// virtio_mmc_print_binary("Opcode", &mrq->cmd->opcode,
 		// 			sizeof(u32));
@@ -85,12 +88,16 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		printk(KERN_INFO "Command: NULL\n");
 	}
 	if (mrq->data) {
+		data->req.is_data = true;
 		printk(KERN_INFO "Data blocks: %u\n", mrq->data->blocks);
 		printk(KERN_INFO "Data block size: %u\n", mrq->data->blksz);
 		printk(KERN_INFO "Data flags: %x\n", mrq->data->flags);
 		data->req.blocks = mrq->data->blocks;
 		data->req.blksz = mrq->data->blksz;
 		data->req.flags = mrq->data->flags;
+		if(mrq->data->flags & MMC_DATA_WRITE) {
+			data->req.is_write = true;
+		}
 	}
 
 	virtio_mmc_send_request(data);
@@ -167,6 +174,18 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	if (data->req.is_request && data->last_mrq) {
 		for (int i = 0; i < response->resp_len / 4; i++) {
 			data->last_mrq->cmd->resp[i] = response->response[i];
+		}
+
+		if(data->req.is_data && !data->req.is_write) {
+			printk(KERN_INFO "virtio_mmc_vq_callback: data read\n");
+			struct scatterlist *sg = &data->sg;
+			u8 *buf = sg_virt(sg);
+			for(int i = 0; i < data->req.blocks; i++) {
+				for(int j = 0; j < data->req.blksz; j++) {
+					*buf = response->buf[i * data->req.blksz + j];
+					buf++;
+				}
+			}
 		}
 
 		// data->last_mrq->cmd->error = 0;
