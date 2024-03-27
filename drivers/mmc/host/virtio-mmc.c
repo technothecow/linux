@@ -5,6 +5,7 @@
 #include "linux/mmc/mmc.h"
 #include "linux/printk.h"
 #include "linux/scatterlist.h"
+#include "linux/types.h"
 #include "linux/virtio_config.h"
 #include <linux/virtio.h>
 #include <linux/cdev.h>
@@ -38,6 +39,7 @@ typedef struct virtio_mmc_data {
 	struct mmc_request *last_mrq;
 
 	struct scatterlist sg;
+	struct sg_mapping_iter miter;
 	virtio_mmc_req req;
 	u8 response;
 
@@ -177,15 +179,17 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		}
 
 		if(data->req.is_data && !data->req.is_write) {
-			printk(KERN_INFO "virtio_mmc_vq_callback: data read\n");
-			struct scatterlist *sg = &data->sg;
-			u8 *buf = sg_virt(sg);
-			for(int i = 0; i < data->req.blocks; i++) {
-				for(int j = 0; j < data->req.blksz; j++) {
-					printk(KERN_INFO "virtio_mmc_vq_callback: pos = %d, val = %x\n", i * data->req.blksz + j, response->buf[i * data->req.blksz + j]);
-					buf[i * data->req.blksz + j] = response->buf[i * data->req.blksz + j];
-				}
+			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
+			size_t len = data->last_mrq->data->blksz * data->last_mrq->data->blocks;
+			size_t offset = 0;
+			sg_miter_start(&data->miter, data->last_mrq->data->sg, 1, flags);
+			while(sg_miter_next(&data->miter)) {
+				printk(KERN_INFO "virtio_mmc_vq_callback: data read: ");
+				size_t copy_len = min(len - offset, data->miter.length);
+				memcpy(data->miter.addr, response->buf + offset, copy_len);
+				offset += copy_len;
 			}
+			sg_miter_stop(&data->miter);
 		}
 
 		mmc_request_done(host, data->last_mrq);
