@@ -162,6 +162,7 @@ int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 static int __mmc_send_if_cond(struct mmc_host *host, u32 ocr, u8 pcie_bits,
 			      u32 *resp)
 {
+	printk(KERN_INFO "__mmc_send_if_cond\n");
 	struct mmc_command cmd = {};
 	int err;
 	static const u8 test_pattern = 0xAA;
@@ -177,6 +178,7 @@ static int __mmc_send_if_cond(struct mmc_host *host, u32 ocr, u8 pcie_bits,
 	cmd.flags = MMC_RSP_SPI_R7 | MMC_RSP_R7 | MMC_CMD_BCR;
 
 	err = mmc_wait_for_cmd(host, &cmd, 0);
+	printk(KERN_INFO "__mmc_send_if_cond: mmc_wait_for_cmd done; err = %d\n", err);
 	if (err)
 		return err;
 
@@ -217,9 +219,9 @@ int mmc_send_if_cond_pcie(struct mmc_host *host, u32 ocr)
 
 	printk("mmc_send_if_cond_pcie: __mmc_send_if_cond\n");
 	ret = __mmc_send_if_cond(host, ocr, pcie_bits, &resp);
-	if (ret)
+	if (ret){
 		printk(KERN_ERR "mmc_send_if_cond_pcie: __mmc_send_if_cond failed\n");
-		return 0;
+		return 0;}
 	printk(KERN_INFO "mmc_send_if_cond_pcie: __mmc_send_if_cond done, resp = %x\n", resp);
 
 

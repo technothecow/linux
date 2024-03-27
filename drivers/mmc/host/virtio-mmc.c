@@ -28,6 +28,7 @@ typedef struct virtio_mmc_resp {
 	u8 response1;
 	u8 response2;
 	u8 response3;
+	int err;
 } virtio_mmc_resp;
 
 typedef struct virtio_mmc_data {
@@ -90,6 +91,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq) {
 		virtio_mmc_print_binary("Flags", &mrq->cmd->flags, sizeof(u32));
 		data->req.opcode = mrq->cmd->opcode;
 		data->req.arg = mrq->cmd->arg;
+		data->req.flags = mrq->cmd->flags;
 	} else {
 		printk(KERN_INFO "Command: NULL\n");
 	}
@@ -172,7 +174,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 		data->last_mrq->cmd->resp[2] = response->response2;
 		data->last_mrq->cmd->resp[3] = response->response3;
 
-		data->last_mrq->cmd->error = 0;
+		data->last_mrq->cmd->error = response->err;
 		mmc_request_done(host, data->last_mrq);
 		data->last_mrq = NULL;
 		printk(KERN_INFO "virtio_mmc_vq_callback: request done, response = %x, %x, %x, %x\n", response->response0, response->response1, response->response2, response->response3);
