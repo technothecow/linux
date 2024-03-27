@@ -1831,10 +1831,13 @@ int mmc_attach_sd(struct mmc_host *host)
 
 	WARN_ON(!host->claimed);
 
+	printk(KERN_INFO "mmc_attach_sd: sending APP OP COND\n");
 	err = mmc_send_app_op_cond(host, 0, &ocr);
+	printk(KERN_INFO "mmc_attach_sd: mmc_send_app_op_cond returned %d\n", err);
 	if (err)
 		return err;
 
+	printk(KERN_INFO "mmc_attach_sd: mmc_attach_bus\n");
 	mmc_attach_bus(host, &mmc_sd_ops);
 	if (host->ocr_avail_sd)
 		host->ocr_avail = host->ocr_avail_sd;
@@ -1842,10 +1845,14 @@ int mmc_attach_sd(struct mmc_host *host)
 	/*
 	 * We need to get OCR a different way for SPI.
 	 */
+	printk(KERN_INFO "mmc_attach_sd: mmc_host_is_spi?\n");
 	if (mmc_host_is_spi(host)) {
+		printk(KERN_INFO "mmc_attach_sd: mmc_host_is_spi, go_idle\n");
 		mmc_go_idle(host);
 
+		printk(KERN_INFO "mmc_attach_sd: mmc_spi_read_ocr\n");
 		err = mmc_spi_read_ocr(host, 0, &ocr);
+		printk(KERN_INFO "mmc_attach_sd: mmc_spi_read_ocr returned %d\n", err);
 		if (err)
 			goto err;
 	}

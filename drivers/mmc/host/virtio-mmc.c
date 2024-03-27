@@ -24,11 +24,8 @@ typedef struct virtio_mmc_req {
 } virtio_mmc_req;
 
 typedef struct virtio_mmc_resp {
-	u8 response0;
-	u8 response1;
-	u8 response2;
-	u8 response3;
-	int err;
+	u8 response[4];
+	int resp_len;
 } virtio_mmc_resp;
 
 typedef struct virtio_mmc_data {
@@ -169,15 +166,18 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq) {
 	virtio_mmc_resp *response = virtqueue_get_buf(vq, &len);
 
 	if(data->req.is_request && data->last_mrq) {
-		data->last_mrq->cmd->resp[0] = response->response0;
-		data->last_mrq->cmd->resp[1] = response->response1;
-		data->last_mrq->cmd->resp[2] = response->response2;
-		data->last_mrq->cmd->resp[3] = response->response3;
+		for(int i=0;i<response->resp_len;i++) {
+			data->last_mrq->cmd->resp[i] = response->response[i];
+		}
 
-		data->last_mrq->cmd->error = response->err;
+		// data->last_mrq->cmd->error = 0;
 		mmc_request_done(host, data->last_mrq);
 		data->last_mrq = NULL;
-		printk(KERN_INFO "virtio_mmc_vq_callback: request done, response = %x, %x, %x, %x\n", response->response0, response->response1, response->response2, response->response3);
+		printk(KERN_INFO "virtio_mmc_vq_callback: request done, response: ");
+		for(int i=0;i<response->resp_len;i++) {
+			printk(KERN_CONT "%d ", response->response[i]);
+		}
+		printk(KERN_CONT "\n");
 	}
 }
 
