@@ -927,16 +927,19 @@ static int mmc_sd_get_ro(struct mmc_host *host)
 int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
 	bool reinit)
 {
+	printk(KERN_INFO "mmc_sd_setup_card\n");
 	int err;
 
 	if (!reinit) {
 		/*
 		 * Fetch SCR from card.
 		 */
+		printk(KERN_INFO "mmc_sd_setup_card: mmc_app_send_scr\n");
 		err = mmc_app_send_scr(card);
 		if (err)
 			return err;
 
+		printk(KERN_INFO "mmc_sd_setup_card: mmc_decode_scr\n");
 		err = mmc_decode_scr(card);
 		if (err)
 			return err;

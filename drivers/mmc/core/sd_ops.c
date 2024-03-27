@@ -313,6 +313,8 @@ int mmc_app_send_scr(struct mmc_card *card)
 
 	mmc_wait_for_req(card->host, &mrq);
 
+	printk(KERN_INFO "mmc_app_send_scr: scr[0] = %x, scr[1] = %x\n", scr[0], scr[1]);
+
 	card->raw_scr[0] = be32_to_cpu(scr[0]);
 	card->raw_scr[1] = be32_to_cpu(scr[1]);
 
