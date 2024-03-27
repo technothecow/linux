@@ -182,13 +182,12 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			u8 *buf = sg_virt(sg);
 			for(int i = 0; i < data->req.blocks; i++) {
 				for(int j = 0; j < data->req.blksz; j++) {
-					*buf = response->buf[i * data->req.blksz + j];
-					buf++;
+					printk(KERN_INFO "virtio_mmc_vq_callback: pos = %d, val = %x\n", i * data->req.blksz + j, response->buf[i * data->req.blksz + j]);
+					buf[i * data->req.blksz + j] = response->buf[i * data->req.blksz + j];
 				}
 			}
 		}
 
-		// data->last_mrq->cmd->error = 0;
 		mmc_request_done(host, data->last_mrq);
 		data->last_mrq = NULL;
 		printk(KERN_INFO
