@@ -42,20 +42,6 @@ typedef struct virtio_mmc_data {
 	struct cdev cdev;
 } virtio_mmc_data;
 
-static void virtio_mmc_print_binary(const char *name, void *data, size_t size)
-{
-	printk(KERN_INFO "%s: ", name);
-	for (int i = 0; i < size; i++) {
-		unsigned char byte = ((unsigned char *)data)[i];
-		for (int j = 7; j >= 0; j--) {
-			printk(KERN_CONT "%d", (byte >> j) & 1);
-		}
-		printk(KERN_CONT " ");
-	}
-	printk(KERN_CONT "%d", *(u32 *)data);
-	printk(KERN_CONT "\n");
-}
-
 static void virtio_mmc_send_request(virtio_mmc_data *data)
 {
 	struct scatterlist sg_out_linux, sg_in_linux;
