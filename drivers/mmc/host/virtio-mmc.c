@@ -166,24 +166,31 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 
 static void virtio_mmc_vq_callback(struct virtqueue *vq)
 {
-	// printk(KERN_INFO "virtio_mmc_vq_callback\n");
+	printk(KERN_INFO "virtio_mmc_vq_callback\n");
 	struct mmc_host *host = vq->vdev->priv;
+	printk(KERN_INFO "host pointer: %p\n", host);
 	virtio_mmc_data *data = mmc_priv(host);
+	printk(KERN_INFO "data pointer: %p\n", data);
 	unsigned int len;
 
 	virtio_mmc_resp *response = virtqueue_get_buf(vq, &len);
+	printk(KERN_INFO "response pointer: %p\n", response);
 
 	if (data->req.is_request && data->last_mrq) {
 		for (int i = 0; i < response->resp_len / 4; i++) {
 			data->last_mrq->cmd->resp[i] = response->response[i];
 		}
 
-		if(data->req.is_data && !data->req.is_write) {
+		if (data->req.is_data && !data->req.is_write) {
 			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
 			size_t len = data->last_mrq->data->blksz * data->last_mrq->data->blocks;
 			size_t offset = 0;
 			sg_miter_start(&data->miter, data->last_mrq->data->sg, 1, flags);
-			while(sg_miter_next(&data->miter)) {
+			while (sg_miter_next(&data->miter)) {
+				if (!data->miter.addr) {
+					printk(KERN_ERR "virtio_mmc_vq_callback: Address is NULL\n");
+					break;
+				}
 				printk(KERN_INFO "virtio_mmc_vq_callback: data read: ");
 				size_t copy_len = min(len - offset, data->miter.length);
 				memcpy(data->miter.addr, response->buf + offset, copy_len);
@@ -194,8 +201,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 
 		mmc_request_done(host, data->last_mrq);
 		data->last_mrq = NULL;
-		printk(KERN_INFO
-		       "virtio_mmc_vq_callback: request done, response: ");
+		printk(KERN_INFO "virtio_mmc_vq_callback: request done, response: ");
 		for (int i = 0; i < response->resp_len / 4; i++) {
 			printk(KERN_CONT "%x ", response->response[i]);
 		}
