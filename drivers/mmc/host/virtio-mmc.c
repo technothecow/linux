@@ -177,11 +177,16 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	printk(KERN_INFO "response pointer: %p\n", response);
 
 	if (data->req.is_request && data->last_mrq) {
+		printk(KERN_INFO "data->req pointer: %p", &data->req);
+		printk(KERN_INFO "data->last_mrq pointer: %p\n", data->last_mrq);
+		printk(KERN_INFO "data->last_mrq->cmd pointer: %p\n", data->last_mrq->cmd);
+		printk(KERN_INFO "data->last_mrq->cmd->resp pointer: %p\n", &data->last_mrq->cmd->resp);
+		printk(KERN_INFO "data->last_mrq->data pointer: %p\n", data->last_mrq->data);
 		for (int i = 0; i < response->resp_len / 4; i++) {
 			data->last_mrq->cmd->resp[i] = response->response[i];
 		}
 
-		if (data->req.is_data && !data->req.is_write) {
+		if (data->last_mrq->data && data->req.is_data && !data->req.is_write) {
 			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
 			size_t len = data->last_mrq->data->blksz * data->last_mrq->data->blocks;
 			size_t offset = 0;
