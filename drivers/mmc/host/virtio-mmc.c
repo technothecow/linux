@@ -1,8 +1,8 @@
 #include "virtio-mmc.h"
 #include "asm-generic/int-ll64.h"
+#include "linux/completion.h"
 #include "linux/kern_levels.h"
 #include "linux/mmc/host.h"
-#include "linux/mmc/mmc.h"
 #include "linux/printk.h"
 #include "linux/scatterlist.h"
 #include "linux/types.h"
@@ -45,6 +45,8 @@ typedef struct virtio_mmc_data {
 
 	dev_t devt;
 	struct cdev cdev;
+
+	struct completion wait_for_request;
 } virtio_mmc_data;
 
 static void virtio_mmc_send_request(virtio_mmc_data *data)
@@ -64,6 +66,7 @@ static void virtio_mmc_send_request(virtio_mmc_data *data)
 
 	// printk(KERN_INFO "virtqueue_kick\n");
 	virtqueue_kick(data->vq);
+	wait_for_completion(&data->wait_for_request);
 }
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
@@ -108,18 +111,6 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
 	printk(KERN_INFO "virtio_mmc_set_ios\n");
-	// printk(KERN_INFO "VDD: %d\n", ios->vdd);
-
-	// virtio_mmc_data *data = mmc_priv(mmc);
-	// if (!data) {
-	// 	printk(KERN_CRIT "virtio_mmc_set_ios: No data\n");
-	// 	return;
-	// }
-	// virtio_mmc_req *req = &data->req;
-	// req->is_set_ios = true;
-	// req->vdd = ios->vdd;
-
-	// virtio_mmc_send_request(data);
 }
 
 static int virtio_mmc_get_ro(struct mmc_host *mmc)
@@ -213,6 +204,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		}
 		printk(KERN_CONT "\n");
 	}
+	complete(&data->wait_for_request);
 }
 
 static int create_host(struct virtio_device *vdev)
@@ -268,7 +260,8 @@ static int virtio_mmc_probe(struct virtio_device *vdev)
 	}
 	printk(KERN_INFO "virtio_mmc_probe: mmc host created\n");
 
-	// struct virtio_mmc_data *data = mmc_priv(vdev->priv);
+	struct virtio_mmc_data *data = mmc_priv(vdev->priv);
+	init_completion(&data->wait_for_request);
 
 	printk(KERN_INFO "virtio_mmc_probe finished\n");
 	return 0;
