@@ -12,6 +12,8 @@
 #include <linux/device.h>
 #include <linux/fs.h>
 
+static DECLARE_COMPLETION(request_handled);
+
 typedef struct virtio_mmc_req {
 	bool is_request;
 	u32 opcode;
@@ -45,8 +47,6 @@ typedef struct virtio_mmc_data {
 
 	dev_t devt;
 	struct cdev cdev;
-
-	struct completion wait_for_request;
 } virtio_mmc_data;
 
 static void virtio_mmc_send_request(virtio_mmc_data *data)
@@ -66,7 +66,7 @@ static void virtio_mmc_send_request(virtio_mmc_data *data)
 
 	// printk(KERN_INFO "virtqueue_kick\n");
 	virtqueue_kick(data->vq);
-	wait_for_completion(&data->wait_for_request);
+	wait_for_completion(&request_handled);
 }
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
@@ -204,7 +204,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		}
 		printk(KERN_CONT "\n");
 	}
-	complete(&data->wait_for_request);
+	complete(&request_handled);
 }
 
 static int create_host(struct virtio_device *vdev)
