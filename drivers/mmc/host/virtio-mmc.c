@@ -183,6 +183,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 
 	mmc_request_done(host, data->last_mrq);
 	data->last_mrq = NULL;
+	printk(KERN_INFO "mmc_request_done");
 
 	complete(&request_handled);
 }

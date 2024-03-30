@@ -52,6 +52,7 @@ EXPORT_SYMBOL_GPL(mmc_app_cmd);
 static int mmc_wait_for_app_cmd(struct mmc_host *host, struct mmc_card *card,
 				struct mmc_command *cmd)
 {
+	printk(KERN_INFO "mmc_wait_for_app_cmd 1");
 	struct mmc_request mrq = {};
 	int i, err = -EIO;
 
@@ -60,7 +61,9 @@ static int mmc_wait_for_app_cmd(struct mmc_host *host, struct mmc_card *card,
 	 * we cannot use the retries field in mmc_command.
 	 */
 	for (i = 0; i <= MMC_CMD_RETRIES; i++) {
+		printk(KERN_INFO "mmc_wait_for_app_cmd 2");
 		err = mmc_app_cmd(host, card);
+		printk(KERN_INFO "mmc_wait_for_app_cmd 3, err = %d", err);
 		if (err) {
 			/* no point in retrying; no APP commands allowed */
 			if (mmc_host_is_spi(host)) {
@@ -70,19 +73,25 @@ static int mmc_wait_for_app_cmd(struct mmc_host *host, struct mmc_card *card,
 			continue;
 		}
 
+		printk(KERN_INFO "mmc_wait_for_app_cmd 3");
 		memset(&mrq, 0, sizeof(struct mmc_request));
 
+		printk(KERN_INFO "mmc_wait_for_app_cmd 4");
 		memset(cmd->resp, 0, sizeof(cmd->resp));
 		cmd->retries = 0;
 
 		mrq.cmd = cmd;
 		cmd->data = NULL;
 
+		printk(KERN_INFO "mmc_wait_for_app_cmd 5");
 		mmc_wait_for_req(host, &mrq);
 
 		err = cmd->error;
+		printk(KERN_INFO "mmc_wait_for_app_cmd 6");
 		if (!cmd->error)
 			break;
+
+		printk(KERN_INFO "mmc_wait_for_app_cmd 7");
 
 		/* no point in retrying illegal APP commands */
 		if (mmc_host_is_spi(host)) {
