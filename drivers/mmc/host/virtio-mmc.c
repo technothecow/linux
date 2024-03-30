@@ -61,7 +61,9 @@ static void virtio_mmc_send_request(virtio_mmc_data *data)
 
 	printk(KERN_INFO "virtqueue_kick\n");
 	virtqueue_kick(data->vq);
+	printk(KERN_INFO "request_handled wait");
 	wait_for_completion(&request_handled);
+	printk(KERN_INFO "request_handled waited");
 }
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
@@ -186,6 +188,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	printk(KERN_INFO "mmc_request_done");
 
 	complete(&request_handled);
+	printk(KERN_INFO "request_handled complete")
 }
 
 static int create_host(struct virtio_device *vdev)
