@@ -37,9 +37,11 @@ int mmc_app_cmd(struct mmc_host *host, struct mmc_card *card)
 		cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_BCR;
 	}
 
+	printk(KERN_INFO "mmc_app_cmd 1");
 	err = mmc_wait_for_cmd(host, &cmd, 0);
 	if (err)
 		return err;
+	printk(KERN_INFO "mmc_app_cmd 2");
 
 	/* Check that card supported application commands */
 	if (!mmc_host_is_spi(host) && !(cmd.resp[0] & R1_APP_CMD))

@@ -216,10 +216,12 @@ EXPORT_SYMBOL(mmc_request_done);
 
 static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 {
+	printk(KERN_INFO "__mmc_start_request 1");
 	int err;
 
 	/* Assumes host controller has been runtime resumed by mmc_claim_host */
 	err = mmc_retune(host);
+	printk(KERN_INFO "__mmc_start_request 2");
 	if (err) {
 		mrq->cmd->error = err;
 		mmc_request_done(host, mrq);
@@ -231,8 +233,10 @@ static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 	 * sdio devices won't work properly.
 	 * And bypass I/O abort, reset and bus suspend operations.
 	 */
+	printk(KERN_INFO "__mmc_start_request 3");
 	if (sdio_is_io_busy(mrq->cmd->opcode, mrq->cmd->arg) &&
 	    host->ops->card_busy) {
+		printk(KERN_INFO "__mmc_start_request 3.1");
 		int tries = 500; /* Wait aprox 500ms at maximum */
 
 		while (host->ops->card_busy(host) && --tries)
@@ -245,6 +249,7 @@ static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 		}
 	}
 
+	printk(KERN_INFO "__mmc_start_request 4");
 	if (mrq->cap_cmd_during_tfr) {
 		host->ongoing_mrq = mrq;
 		/*
@@ -259,7 +264,9 @@ static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 	if (host->cqe_on)
 		host->cqe_ops->cqe_off(host);
 
+	printk(KERN_INFO "__mmc_start_request 5");
 	host->ops->request(host, mrq);
+	printk(KERN_INFO "__mmc_start_request 6");
 }
 
 static void mmc_mrq_pr_debug(struct mmc_host *host, struct mmc_request *mrq,
@@ -335,26 +342,31 @@ static int mmc_mrq_prep(struct mmc_host *host, struct mmc_request *mrq)
 
 int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 {
-	printk(KERN_INFO "mmc_start_request\n");
+	printk(KERN_INFO "mmc_start_request 1\n");
 	int err;
 
 	init_completion(&mrq->cmd_completion);
 
 	mmc_retune_hold(host);
+	printk(KERN_INFO "mmc_start_request 2\n");
 
 	if (mmc_card_removed(host->card))
 		return -ENOMEDIUM;
 
 	mmc_mrq_pr_debug(host, mrq, false);
+	printk(KERN_INFO "mmc_start_request 3\n");
 
 	WARN_ON(!host->claimed);
 
 	err = mmc_mrq_prep(host, mrq);
 	if (err)
 		return err;
+	printk(KERN_INFO "mmc_start_request 4\n");
 
 	led_trigger_event(host->led, LED_FULL);
+	printk(KERN_INFO "mmc_start_request 5\n");
 	__mmc_start_request(host, mrq);
+	printk(KERN_INFO "mmc_start_request 6\n");
 
 	return 0;
 }
@@ -626,13 +638,16 @@ int mmc_wait_for_cmd(struct mmc_host *host, struct mmc_command *cmd, int retries
 
 	WARN_ON(!host->claimed);
 
+	printk(KERN_INFO "mmc_wait_for_cmd 1");
 	memset(cmd->resp, 0, sizeof(cmd->resp));
 	cmd->retries = retries;
 
 	mrq.cmd = cmd;
 	cmd->data = NULL;
 
+	printk(KERN_INFO "mmc_wait_for_cmd 2");
 	mmc_wait_for_req(host, &mrq);
+	printk(KERN_INFO "mmc_wait_for_cmd 3");
 
 	return cmd->error;
 }
