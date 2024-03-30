@@ -49,8 +49,7 @@ static void virtio_mmc_send_request(virtio_mmc_data *data)
 {
 	struct scatterlist sg_out_linux, sg_in_linux;
 	sg_init_one(&sg_out_linux, &data->req, sizeof(struct virtio_mmc_req));
-	sg_init_one(&sg_in_linux, &data->response,
-		    sizeof(struct virtio_mmc_resp));
+	sg_init_one(&sg_in_linux, &data->response, sizeof(struct virtio_mmc_resp));
 
 	struct scatterlist *request[] = { &sg_out_linux, &sg_in_linux };
 
@@ -74,7 +73,6 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 	data->last_mrq = mrq;
 
-	// printk(KERN_INFO "\nMMC Request details:\n");
 	if (mrq->cmd) {
 		data->req.opcode = mrq->cmd->opcode;
 		data->req.arg = mrq->cmd->arg;
@@ -92,6 +90,10 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		data->req.flags = mrq->data->flags;
 		if (mrq->data->flags & MMC_DATA_WRITE) {
 			data->req.is_write = true;
+			printk(KERN_INFO "Data write");
+		} else {
+			data->req.is_write = false;
+			printk(KERN_INFO "Data read");
 		}
 	}
 
@@ -106,7 +108,7 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 static int virtio_mmc_get_ro(struct mmc_host *mmc)
 {
 	printk(KERN_INFO "virtio_mmc_get_ro\n");
-	return 1;
+	return 0;
 }
 
 static int virtio_mmc_get_cd(struct mmc_host *mmc)
@@ -125,15 +127,13 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 static void virtio_mmc_vq_callback(struct virtqueue *vq)
 {
 	printk(KERN_INFO "virtio_mmc_vq_callback\n");
+	unsigned int len;
 	struct mmc_host *host = vq->vdev->priv;
 	printk(KERN_INFO "host pointer: %p\n", host);
 	virtio_mmc_data *data = mmc_priv(host);
-	printk(KERN_INFO "data pointer: %p\n", data);
-	unsigned int len;
-
 	virtio_mmc_resp *response = virtqueue_get_buf(vq, &len);
+	printk(KERN_INFO "data pointer: %p\n", data);
 	printk(KERN_INFO "response pointer: %p\n", response);
-
 	printk(KERN_INFO "data->req pointer: %p", &data->req);
 	printk(KERN_INFO "data->last_mrq pointer: %p\n", data->last_mrq);
 	printk(KERN_INFO "data->last_mrq->cmd pointer: %p\n",
@@ -155,32 +155,31 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			size_t len = data->last_mrq->data->blksz *
 				     data->last_mrq->data->blocks;
 			size_t offset = 0;
+
 			sg_miter_start(&data->miter, data->last_mrq->data->sg,
 				       1, flags);
+
 			while (sg_miter_next(&data->miter)) {
-				if (!data->miter.addr) {
-					printk(KERN_ERR
-					       "virtio_mmc_vq_callback: Address is NULL\n");
-					break;
-				}
-				printk(KERN_INFO
-				       "virtio_mmc_vq_callback: data read: ");
+				printk(KERN_INFO "virtio_mmc_vq_callback: data->miter.addr = %p", data->miter.addr);
 				size_t copy_len =
 					min(len - offset, data->miter.length);
 				memcpy(data->miter.addr, response->buf + offset,
 				       copy_len);
 				offset += copy_len;
 			}
+
 			sg_miter_stop(&data->miter);
 		}
 	}
 
 	mmc_request_done(host, data->last_mrq);
+
 	printk(KERN_INFO "virtio_mmc_vq_callback: request done, response: ");
 	for (int i = 0; i < response->resp_len / 4; i++) {
 		printk(KERN_CONT "%x ", response->response[i]);
 	}
 	printk(KERN_CONT "\n");
+
 	complete(&request_handled);
 }
 
@@ -214,8 +213,6 @@ static int create_host(struct virtio_device *vdev)
 		mmc_free_host(host);
 		return err;
 	}
-
-	virtio_device_ready(vdev);
 
 	return 0;
 }
