@@ -263,6 +263,7 @@ int mmc_set_relative_addr(struct mmc_card *card)
 static int
 mmc_send_cxd_native(struct mmc_host *host, u32 arg, u32 *cxd, int opcode)
 {
+	printk(KERN_INFO "mmc_send_cxd_native 1");
 	int err;
 	struct mmc_command cmd = {};
 
@@ -270,11 +271,17 @@ mmc_send_cxd_native(struct mmc_host *host, u32 arg, u32 *cxd, int opcode)
 	cmd.arg = arg;
 	cmd.flags = MMC_RSP_R2 | MMC_CMD_AC;
 
+	printk(KERN_INFO "mmc_send_cxd_native 2");
+
 	err = mmc_wait_for_cmd(host, &cmd, MMC_CMD_RETRIES);
 	if (err)
 		return err;
 
+	printk(KERN_INFO "mmc_send_cxd_native 3");
+
 	memcpy(cxd, cmd.resp, sizeof(u32) * 4);
+
+	printk(KERN_INFO "mmc_send_cxd_native 4");
 
 	return 0;
 }
@@ -355,6 +362,7 @@ err:
 
 int mmc_send_csd(struct mmc_card *card, u32 *csd)
 {
+	printk(KERN_INFO "mmc_send_csd");
 	if (mmc_host_is_spi(card->host))
 		return mmc_spi_send_cxd(card->host, csd, MMC_SEND_CSD);
 

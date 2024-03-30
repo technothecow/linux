@@ -95,6 +95,8 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			data->req.is_write = false;
 			printk(KERN_INFO "Data read");
 		}
+	} else {
+		data->req.is_data = false;
 	}
 
 	virtio_mmc_send_request(data);
@@ -147,9 +149,13 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	for (int i = 0; i < response->resp_len / 4; i++) {
 		data->last_mrq->cmd->resp[i] = response->response[i];
 	}
-	printk(KERN_INFO "finished writing response");
+	printk(KERN_INFO "finished writing response(%d): ", response->resp_len/4);
+	for (int i = 0; i < response->resp_len / 4; i++) {
+		printk(KERN_CONT "%x ", response->response[i]);
+	}
+	printk(KERN_CONT "\n");
 
-	if (data->last_mrq->data && data->req.is_data && !data->req.is_write) {
+	if (data->last_mrq->data && data->req.is_data) {
 		if (data->req.is_write) {
 			printk("virtio_mmc_vq_callback: data write\n");
 		} else {
@@ -175,13 +181,8 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		}
 	}
 
-	printk(KERN_INFO "virtio_mmc_vq_callback: request done, response: ");
-	for (int i = 0; i < response->resp_len / 4; i++) {
-		printk(KERN_CONT "%x ", response->response[i]);
-	}
-	printk(KERN_CONT "\n");
-
 	mmc_request_done(host, data->last_mrq);
+	data->last_mrq = NULL;
 
 	complete(&request_handled);
 }
