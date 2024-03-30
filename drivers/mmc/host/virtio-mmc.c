@@ -108,7 +108,7 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 static int virtio_mmc_get_ro(struct mmc_host *mmc)
 {
 	printk(KERN_INFO "virtio_mmc_get_ro\n");
-	return 0;
+	return 1;
 }
 
 static int virtio_mmc_get_cd(struct mmc_host *mmc)
@@ -142,9 +142,12 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	       &data->last_mrq->cmd->resp);
 	printk(KERN_INFO "data->last_mrq->data pointer: %p\n",
 	       data->last_mrq->data);
+
+	printk(KERN_INFO "writing response...");
 	for (int i = 0; i < response->resp_len / 4; i++) {
 		data->last_mrq->cmd->resp[i] = response->response[i];
 	}
+	printk(KERN_INFO "finished writing response");
 
 	if (data->last_mrq->data && data->req.is_data && !data->req.is_write) {
 		if (data->req.is_write) {
@@ -172,13 +175,13 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		}
 	}
 
-	mmc_request_done(host, data->last_mrq);
-
 	printk(KERN_INFO "virtio_mmc_vq_callback: request done, response: ");
 	for (int i = 0; i < response->resp_len / 4; i++) {
 		printk(KERN_CONT "%x ", response->response[i]);
 	}
 	printk(KERN_CONT "\n");
+
+	mmc_request_done(host, data->last_mrq);
 
 	complete(&request_handled);
 }
