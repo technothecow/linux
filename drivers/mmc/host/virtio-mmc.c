@@ -159,9 +159,9 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 
 	if (data->last_mrq->data && data->req.is_data) {
 		if (data->req.is_write) {
-			printk("virtio_mmc_vq_callback: data write\n");
+			printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
 		} else {
-			printk("virtio_mmc_vq_callback: data read\n");
+			printk(KERN_INFO" virtio_mmc_vq_callback: data read\n");
 			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
 			size_t len = data->last_mrq->data->blksz *
 				     data->last_mrq->data->blocks;
@@ -185,10 +185,10 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 
 	mmc_request_done(host, data->last_mrq);
 	data->last_mrq = NULL;
-	printk(KERN_INFO "mmc_request_done");
+	printk(KERN_INFO "virtio_mmc_vq_callback: mmc_request_done");
 
 	complete(&request_handled);
-	printk(KERN_INFO "request_handled complete")
+	printk(KERN_INFO "virtio_mmc_vq_callback: request_handled complete");
 }
 
 static int create_host(struct virtio_device *vdev)
@@ -244,6 +244,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev)
 
 	// struct virtio_mmc_data *data = mmc_priv(vdev->priv);
 	init_completion(&request_handled);
+	printk(KERN_INFO "request_handled address: %p", &request_handled);
 
 	printk(KERN_INFO "virtio_mmc_probe finished\n");
 	return 0;
