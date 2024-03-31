@@ -39,7 +39,7 @@ typedef struct virtio_mmc_data {
 	struct scatterlist sg;
 	struct sg_mapping_iter miter;
 	virtio_mmc_req req;
-	u8 response;
+	virtio_mmc_resp response;
 
 	dev_t devt;
 	struct cdev cdev;
