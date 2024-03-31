@@ -110,7 +110,7 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 static int virtio_mmc_get_ro(struct mmc_host *mmc)
 {
 	printk(KERN_INFO "virtio_mmc_get_ro\n");
-	return 1;
+	return 0;
 }
 
 static int virtio_mmc_get_cd(struct mmc_host *mmc)
@@ -185,7 +185,7 @@ static int create_host(struct virtio_device *vdev)
 	host->f_min = 300000;
 	host->f_max = 500000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-	// host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC;
+	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
 
