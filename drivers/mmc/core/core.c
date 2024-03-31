@@ -336,31 +336,25 @@ static int mmc_mrq_prep(struct mmc_host *host, struct mmc_request *mrq)
 
 int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 {
-	printk(KERN_INFO "mmc_start_request 1\n");
 	int err;
 
 	init_completion(&mrq->cmd_completion);
 
 	mmc_retune_hold(host);
-	printk(KERN_INFO "mmc_start_request 2\n");
 
 	if (mmc_card_removed(host->card))
 		return -ENOMEDIUM;
 
 	mmc_mrq_pr_debug(host, mrq, false);
-	printk(KERN_INFO "mmc_start_request 3\n");
 
 	WARN_ON(!host->claimed);
 
 	err = mmc_mrq_prep(host, mrq);
 	if (err)
 		return err;
-	printk(KERN_INFO "mmc_start_request 4\n");
 
 	led_trigger_event(host->led, LED_FULL);
-	printk(KERN_INFO "mmc_start_request 5\n");
 	__mmc_start_request(host, mrq);
-	printk(KERN_INFO "mmc_start_request 6\n");
 
 	return 0;
 }

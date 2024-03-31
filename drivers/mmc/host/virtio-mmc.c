@@ -61,9 +61,7 @@ static void virtio_mmc_send_request(virtio_mmc_data *data)
 
 	printk(KERN_INFO "virtqueue_kick\n");
 	virtqueue_kick(data->vq);
-	printk(KERN_INFO "request_handled wait");
 	wait_for_completion(&request_handled);
-	printk(KERN_INFO "request_handled waited");
 }
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
@@ -149,7 +147,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		if (data->req.is_write) {
 			printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
 		} else {
-			printk(KERN_INFO" virtio_mmc_vq_callback: data read\n");
+			printk(KERN_INFO "virtio_mmc_vq_callback: data read\n");
 			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
 			size_t len = data->last_mrq->data->blksz *
 				     data->last_mrq->data->blocks;
@@ -172,10 +170,8 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 
 	mmc_request_done(host, data->last_mrq);
 	data->last_mrq = NULL;
-	printk(KERN_INFO "virtio_mmc_vq_callback: mmc_request_done");
 
 	complete(&request_handled);
-	printk(KERN_INFO "virtio_mmc_vq_callback: request_handled complete");
 }
 
 static int create_host(struct virtio_device *vdev)
