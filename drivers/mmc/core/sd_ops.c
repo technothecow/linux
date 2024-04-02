@@ -328,6 +328,8 @@ int mmc_app_send_scr(struct mmc_card *card)
 
 	card->raw_scr[0] = be32_to_cpu(scr[0]);
 	card->raw_scr[1] = be32_to_cpu(scr[1]);
+	
+	printk(KERN_INFO "mmc_app_send_scr: raw_scr[0] = %x, raw_scr[1] = %x\n", card->raw_scr[0], card->raw_scr[1]);
 
 	kfree(scr);
 
