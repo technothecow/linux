@@ -18,6 +18,7 @@
  * Author:  Andrew Christian
  *          28 May 2002
  */
+#include "linux/kern_levels.h"
 #include <linux/moduleparam.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -2491,12 +2492,16 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 
 	set_capacity(md->disk, size);
 
+	printk(KERN_INFO "if (mmc_host_cmd23(card))\n");
 	if (mmc_host_cmd23(card->host)) {
+		printk(KERN_INFO "card->scr.cmds = %x\n", card->scr.cmds);
+		printk(KERN_INFO "card->scr.cmds & SD_SCR_CMD23_SUPPORT = %x\n", card->scr.cmds & SD_SCR_CMD23_SUPPORT);
 		if ((mmc_card_mmc(card) &&
 		     card->csd.mmca_vsn >= CSD_SPEC_VER_3) ||
 		    (mmc_card_sd(card) &&
 		     card->scr.cmds & SD_SCR_CMD23_SUPPORT))
 			md->flags |= MMC_BLK_CMD23;
+		md->flags |= MMC_BLK_CMD23;
 	}
 
 	if (md->flags & MMC_BLK_CMD23 &&

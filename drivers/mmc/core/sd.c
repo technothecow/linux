@@ -225,13 +225,20 @@ static int mmc_decode_scr(struct mmc_card *card)
 
 	scr->sda_vsn = UNSTUFF_BITS(resp, 56, 4);
 	scr->bus_widths = UNSTUFF_BITS(resp, 48, 4);
-	if (scr->sda_vsn == SCR_SPEC_VER_2)
+	printk(KERN_INFO "mmc_decode_scr: scr->sda_vsn = %d\n", scr->sda_vsn);
+	if (scr->sda_vsn == SCR_SPEC_VER_2) {
 		/* Check if Physical Layer Spec v3.0 is supported */
+		printk(KERN_INFO "mmc_decode_scr: scr->sda_vsn == SCR_SPEC_VER_2\n");
 		scr->sda_spec3 = UNSTUFF_BITS(resp, 47, 1);
+		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec3 = %d\n", scr->sda_spec3);
+	} else {
+		printk(KERN_INFO "mmc_decode_scr: scr->sda_vsn != SCR_SPEC_VER_2\n");
+	}
 
 	if (scr->sda_spec3) {
 		scr->sda_spec4 = UNSTUFF_BITS(resp, 42, 1);
 		scr->sda_specx = UNSTUFF_BITS(resp, 38, 4);
+		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec4 = %d\n", scr->sda_spec4);
 	}
 
 	if (UNSTUFF_BITS(resp, 55, 1))
@@ -239,10 +246,18 @@ static int mmc_decode_scr(struct mmc_card *card)
 	else
 		card->erased_byte = 0x0;
 
-	if (scr->sda_spec4)
+	printk(KERN_INFO "Checking sda_spec");
+	if (scr->sda_spec4) {
+		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec4 == 1\n");
 		scr->cmds = UNSTUFF_BITS(resp, 32, 4);
-	else if (scr->sda_spec3)
+	}
+	else if (scr->sda_spec3) {
+		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec3 == 1\n");
 		scr->cmds = UNSTUFF_BITS(resp, 32, 2);
+	} else {
+		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec3 == 0\n");
+	}
+	printk(KERN_INFO "mmc_decode_scr: scr->cmds = %d\n", scr->cmds);
 
 	/* SD Spec says: any SD Card shall set at least bits 0 and 2 */
 	if (!(scr->bus_widths & SD_SCR_BUS_WIDTH_1) ||
