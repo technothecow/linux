@@ -110,7 +110,7 @@ static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 static int virtio_mmc_get_ro(struct mmc_host *mmc)
 {
 	printk(KERN_INFO "virtio_mmc_get_ro\n");
-	return 0;
+	return 1;
 }
 
 static int virtio_mmc_get_cd(struct mmc_host *mmc)
