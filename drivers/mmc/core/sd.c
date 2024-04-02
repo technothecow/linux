@@ -217,8 +217,8 @@ static int mmc_decode_scr(struct mmc_card *card)
 		printk(KERN_INFO "resp[%d] = %x\n", i, resp[i]);
 	}
 
-	resp[3] = card->raw_scr[1]; // 96-127 = 0
-	resp[2] = card->raw_scr[0]; // 64-95 = 0100 0000 1010 0100 0000 0001 0000 0000
+	resp[3] = card->raw_scr[1]; // 0-31 = 0
+	resp[2] = card->raw_scr[0]; // 32-63 = 0000 0010 0010 0101 1000 0000 0000 0000
 
 	for(int i = 0; i < 4; i++) {
 		printk(KERN_INFO "resp[%d] = %x\n", i, resp[i]);

@@ -2501,7 +2501,6 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 		    (mmc_card_sd(card) &&
 		     card->scr.cmds & SD_SCR_CMD23_SUPPORT))
 			md->flags |= MMC_BLK_CMD23;
-		md->flags |= MMC_BLK_CMD23;
 	}
 
 	if (md->flags & MMC_BLK_CMD23 &&
