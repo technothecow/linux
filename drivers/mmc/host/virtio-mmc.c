@@ -147,11 +147,16 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		if (data->req.is_write) {
 			printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
 		} else {
-			printk(KERN_INFO "virtio_mmc_vq_callback: data read\n");
+			printk(KERN_INFO "virtio_mmc_vq_callback: data read: \n");
 			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
 			size_t len = data->last_mrq->data->blksz *
 				     data->last_mrq->data->blocks;
 			size_t offset = 0;
+
+			for(int i = 0;i<len;i++) {
+				printk(KERN_CONT "%x ", response->buf[i]);
+			}
+			printk(KERN_CONT "\n");
 
 			sg_miter_start(&data->miter, data->last_mrq->data->sg,
 				       1, flags);
