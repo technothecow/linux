@@ -1442,8 +1442,10 @@ EXPORT_SYMBOL(mmc_detect_change);
 
 void mmc_init_erase(struct mmc_card *card)
 {
+	printk(KERN_INFO "mmc_init_erase");
 	unsigned int sz;
 
+	printk(KERN_INFO "mmc_init_erase: card->erase_size = %d", card->erase_size);
 	if (is_power_of_2(card->erase_size))
 		card->erase_shift = ffs(card->erase_size) - 1;
 	else

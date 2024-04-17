@@ -219,6 +219,7 @@ static int mmc_decode_scr(struct mmc_card *card)
 
 	resp[3] = card->raw_scr[1]; // 0-31 = 0
 	resp[2] = card->raw_scr[0]; // 32-63 = 0000 0010 0010 0101 1000 0000 0000 0000
+								//         ^scr[0]   ^scr[1]   ^scr[2]   ^scr[3]
 
 	for(int i = 0; i < 4; i++) {
 		printk(KERN_INFO "resp[%d] = %x\n", i, resp[i]);
@@ -1513,6 +1514,7 @@ retry:
 	if (!v18_fixup_failed && !mmc_host_is_spi(host) && mmc_host_uhs(host) &&
 	    mmc_sd_card_using_v18(card) &&
 	    host->ios.signal_voltage != MMC_SIGNAL_VOLTAGE_180) {
+		printk(KERN_INFO "mmc_sd_init_card: v18_fixup_failed\n");
 		if (mmc_host_set_uhs_voltage(host) ||
 		    mmc_sd_init_uhs_card(card)) {
 			v18_fixup_failed = true;
