@@ -633,6 +633,7 @@ static void blkdev_flush_mapping(struct block_device *bdev)
 
 static int blkdev_get_whole(struct block_device *bdev, blk_mode_t mode)
 {
+	pr_info("blkdev_get_whole: %s\n", bdev->bd_disk->disk_name);
 	struct gendisk *disk = bdev->bd_disk;
 	int ret;
 
@@ -646,6 +647,7 @@ static int blkdev_get_whole(struct block_device *bdev, blk_mode_t mode)
 			return ret;
 		}
 	}
+	pr_info("blkdev_get_whole: %s, after open\n", disk->disk_name);
 
 	if (!atomic_read(&bdev->bd_openers))
 		set_init_blocksize(bdev);
@@ -665,6 +667,7 @@ static void blkdev_put_whole(struct block_device *bdev)
 
 static int blkdev_get_part(struct block_device *part, blk_mode_t mode)
 {
+	pr_info("blkdev_get_part: %s\n", part->bd_disk->disk_name);
 	struct gendisk *disk = part->bd_disk;
 	int ret;
 
