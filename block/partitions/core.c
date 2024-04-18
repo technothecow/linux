@@ -714,7 +714,9 @@ void *read_part_sector(struct parsed_partitions *state, sector_t n, Sector *p)
 		goto out;
 	}
 
+	pr_info("read_part_sector: read_mapping_folio\n");
 	folio = read_mapping_folio(mapping, n >> PAGE_SECTORS_SHIFT, NULL);
+	pr_info("read_part_sector: read_mapping_folio done\n");
 	if (IS_ERR(folio))
 		goto out;
 
