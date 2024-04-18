@@ -124,6 +124,7 @@ invalidate:
 
 static void set_init_blocksize(struct block_device *bdev)
 {
+	pr_info("set_init_blocksize: %s\n", bdev->bd_disk->disk_name);
 	unsigned int bsize = bdev_logical_block_size(bdev);
 	loff_t size = i_size_read(bdev->bd_inode);
 

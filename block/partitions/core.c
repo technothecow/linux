@@ -113,6 +113,7 @@ static void free_partitions(struct parsed_partitions *state)
 
 static struct parsed_partitions *check_partition(struct gendisk *hd)
 {
+	pr_info("check_partition\n");
 	struct parsed_partitions *state;
 	int i, res, err;
 
@@ -584,6 +585,7 @@ static bool blk_add_partition(struct gendisk *disk,
 
 static int blk_add_partitions(struct gendisk *disk)
 {
+	pr_info("blk_add_partitions\n");
 	struct parsed_partitions *state;
 	int ret = -EAGAIN, p;
 
@@ -648,6 +650,7 @@ out_free_state:
 
 int bdev_disk_changed(struct gendisk *disk, bool invalidate)
 {
+	pr_info("bdev_disk_changed\n");
 	struct block_device *part;
 	unsigned long idx;
 	int ret = 0;
