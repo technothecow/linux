@@ -2416,6 +2416,7 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 					      int area_type,
 					      unsigned int part_type)
 {
+	pr_info("mmc_blk_alloc_req\n");
 	struct mmc_blk_data *md;
 	int devidx, ret;
 	char cap_str[10];
@@ -2527,6 +2528,7 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	ret = device_add_disk(md->parent, md->disk, mmc_disk_attr_groups);
 	if (ret)
 		goto err_put_disk;
+	pr_info("mmc_blk_alloc_req: return md\n");
 	return md;
 
  err_put_disk:
