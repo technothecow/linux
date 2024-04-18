@@ -342,6 +342,7 @@ EXPORT_SYMBOL_GPL(disk_uevent);
 
 int disk_scan_partitions(struct gendisk *disk, blk_mode_t mode)
 {
+	pr_info("disk_scan_partitions: %s\n", disk->disk_name);
 	struct block_device *bdev;
 	int ret = 0;
 
@@ -397,6 +398,7 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 				 const struct attribute_group **groups)
 
 {
+	pr_info("device_add_disk\n");
 	struct device *ddev = disk_to_dev(disk);
 	int ret;
 
@@ -410,6 +412,7 @@ int __must_check device_add_disk(struct device *parent, struct gendisk *disk,
 	 * elevator if one is needed, that is, for devices requesting queue
 	 * registration.
 	 */
+	pr_info("device_add_disk: elevator_init_mq\n");
 	elevator_init_mq(disk->queue);
 
 	/* Mark bdev as having a submit_bio, if needed */

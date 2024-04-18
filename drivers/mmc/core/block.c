@@ -363,6 +363,7 @@ static const struct attribute_group *mmc_disk_attr_groups[] = {
 
 static int mmc_blk_open(struct gendisk *disk, blk_mode_t mode)
 {
+	pr_info("mmc_blk_open\n");
 	struct mmc_blk_data *md = mmc_blk_get(disk);
 	int ret = -ENXIO;
 
