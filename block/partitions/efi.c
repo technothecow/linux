@@ -235,6 +235,7 @@ done:
 static size_t read_lba(struct parsed_partitions *state,
 		       u64 lba, u8 *buffer, size_t count)
 {
+	pr_info("read_lba\n");
 	size_t totalreadcount = 0;
 	sector_t n = lba *
 		(queue_logical_block_size(state->disk->queue) / 512);
@@ -245,7 +246,9 @@ static size_t read_lba(struct parsed_partitions *state,
 	while (count) {
 		int copied = 512;
 		Sector sect;
+		pr_info("read_lba: read_part_sector\n");
 		unsigned char *data = read_part_sector(state, n++, &sect);
+		pr_info("read_lba: read_part_sector done\n");
 		if (!data)
 			break;
 		if (copied > count)
@@ -597,7 +600,8 @@ static int find_valid_gpt(struct parsed_partitions *state, gpt_header **gpt,
 
 	pr_info("find_valid_gpt: last_lba");
 	lastlba = last_lba(state->disk);
-        if (!force_gpt) {
+    if (!force_gpt) {
+		pr_info("find_valid_gpt: !force_gpt");
 		/* This will be added to the EFI Spec. per Intel after v1.02. */
 		legacymbr = kzalloc(sizeof(*legacymbr), GFP_KERNEL);
 		if (!legacymbr)
