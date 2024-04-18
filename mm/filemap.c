@@ -3706,6 +3706,7 @@ static struct folio *do_read_cache_folio(struct address_space *mapping,
 	}
 repeat:
 	pr_info("do_read_cache_folio filemap_get_folio begin\n");
+	pr_info("Function pointer 'filler' points to: %pS\n", filler);
 	folio = filemap_get_folio(mapping, index);
 	pr_info("do_read_cache_folio filemap_get_folio end\n");
 	if (IS_ERR(folio)) {
@@ -3725,8 +3726,10 @@ repeat:
 
 		goto filler;
 	}
+	pr_info("do_read_cache_folio folio_test_uptodate begin\n");
 	if (folio_test_uptodate(folio))
 		goto out;
+	pr_info("do_read_cache_folio folio_test_uptodate end\n");
 
 	if (!folio_trylock(folio)) {
 		folio_put_wait_locked(folio, TASK_UNINTERRUPTIBLE);
@@ -3747,7 +3750,9 @@ repeat:
 	}
 
 filler:
+	pr_info("do_read_cache_folio filemap_read_folio begin\n");
 	err = filemap_read_folio(file, filler, folio);
+	pr_info("do_read_cache_folio filemap_read_folio end, err = %d\n", err);
 	if (err) {
 		folio_put(folio);
 		if (err == AOP_TRUNCATED_PAGE)
