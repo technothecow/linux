@@ -360,6 +360,7 @@ int disk_scan_partitions(struct gendisk *disk, blk_mode_t mode)
 	 * scanners.
 	 */
 	if (!(mode & BLK_OPEN_EXCL)) {
+		pr_info("disk_scan_partitions: bd_prepare_to_claim\n");
 		ret = bd_prepare_to_claim(disk->part0, disk_scan_partitions,
 					  NULL);
 		if (ret)
