@@ -235,7 +235,6 @@ done:
 static size_t read_lba(struct parsed_partitions *state,
 		       u64 lba, u8 *buffer, size_t count)
 {
-	pr_info("read_lba\n");
 	size_t totalreadcount = 0;
 	sector_t n = lba *
 		(queue_logical_block_size(state->disk->queue) / 512);
@@ -246,9 +245,7 @@ static size_t read_lba(struct parsed_partitions *state,
 	while (count) {
 		int copied = 512;
 		Sector sect;
-		pr_info("read_lba: read_part_sector\n");
 		unsigned char *data = read_part_sector(state, n++, &sect);
-		pr_info("read_lba: read_part_sector done\n");
 		if (!data)
 			break;
 		if (copied > count)
@@ -338,7 +335,6 @@ static gpt_header *alloc_read_gpt_header(struct parsed_partitions *state,
 static int is_gpt_valid(struct parsed_partitions *state, u64 lba,
 			gpt_header **gpt, gpt_entry **ptes)
 {
-	pr_info("is_gpt_valid\n");
 	u32 crc, origcrc;
 	u64 lastlba, pt_size;
 
@@ -585,7 +581,6 @@ compare_gpts(gpt_header *pgpt, gpt_header *agpt, u64 lastlba)
 static int find_valid_gpt(struct parsed_partitions *state, gpt_header **gpt,
 			  gpt_entry **ptes)
 {
-	pr_info("find_valid_gpt\n");
 	int good_pgpt = 0, good_agpt = 0, good_pmbr = 0;
 	gpt_header *pgpt = NULL, *agpt = NULL;
 	gpt_entry *pptes = NULL, *aptes = NULL;
@@ -598,10 +593,8 @@ static int find_valid_gpt(struct parsed_partitions *state, gpt_header **gpt,
 	if (!ptes)
 		return 0;
 
-	pr_info("find_valid_gpt: last_lba");
 	lastlba = last_lba(state->disk);
-    if (!force_gpt) {
-		pr_info("find_valid_gpt: !force_gpt");
+    	if (!force_gpt) {
 		/* This will be added to the EFI Spec. per Intel after v1.02. */
 		legacymbr = kzalloc(sizeof(*legacymbr), GFP_KERNEL);
 		if (!legacymbr)
@@ -719,7 +712,6 @@ static void utf16_le_to_7bit(const __le16 *in, unsigned int size, u8 *out)
  */
 int efi_partition(struct parsed_partitions *state)
 {
-	pr_info("efi_partition\n");
 	gpt_header *gpt = NULL;
 	gpt_entry *ptes = NULL;
 	u32 i;
@@ -734,7 +726,6 @@ int efi_partition(struct parsed_partitions *state)
 	pr_debug("GUID Partition Table is valid!  Yea!\n");
 
 	for (i = 0; i < le32_to_cpu(gpt->num_partition_entries) && i < state->limit-1; i++) {
-		pr_info("efi_partition: i=%d\n", i);
 		struct partition_meta_info *info;
 		unsigned label_max;
 		u64 start = le64_to_cpu(ptes[i].starting_lba);

@@ -214,7 +214,7 @@ static int virtio_mmc_probe(struct virtio_device *vdev)
 
 	// struct virtio_mmc_data *data = mmc_priv(vdev->priv);
 	init_completion(&request_handled);
-	printk(KERN_INFO "request_handled address: %p", &request_handled);
+	printk(KERN_INFO "request_handled address: %p\n", &request_handled);
 
 	printk(KERN_INFO "virtio_mmc_probe finished\n");
 	return 0;

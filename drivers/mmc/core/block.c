@@ -18,7 +18,6 @@
  * Author:  Andrew Christian
  *          28 May 2002
  */
-#include "linux/kern_levels.h"
 #include <linux/moduleparam.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -363,7 +362,6 @@ static const struct attribute_group *mmc_disk_attr_groups[] = {
 
 static int mmc_blk_open(struct gendisk *disk, blk_mode_t mode)
 {
-	pr_info("mmc_blk_open\n");
 	struct mmc_blk_data *md = mmc_blk_get(disk);
 	int ret = -ENXIO;
 
@@ -2525,7 +2523,6 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 	ret = device_add_disk(md->parent, md->disk, mmc_disk_attr_groups);
 	if (ret)
 		goto err_put_disk;
-	pr_info("mmc_blk_alloc_req: return md\n");
 	return md;
 
  err_put_disk:
