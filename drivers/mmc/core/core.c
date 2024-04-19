@@ -626,16 +626,13 @@ int mmc_wait_for_cmd(struct mmc_host *host, struct mmc_command *cmd, int retries
 
 	WARN_ON(!host->claimed);
 
-	printk(KERN_INFO "mmc_wait_for_cmd 1");
 	memset(cmd->resp, 0, sizeof(cmd->resp));
 	cmd->retries = retries;
 
 	mrq.cmd = cmd;
 	cmd->data = NULL;
 
-	printk(KERN_INFO "mmc_wait_for_cmd 2");
 	mmc_wait_for_req(host, &mrq);
-	printk(KERN_INFO "mmc_wait_for_cmd 3");
 
 	return cmd->error;
 }
@@ -1442,10 +1439,8 @@ EXPORT_SYMBOL(mmc_detect_change);
 
 void mmc_init_erase(struct mmc_card *card)
 {
-	printk(KERN_INFO "mmc_init_erase");
 	unsigned int sz;
 
-	printk(KERN_INFO "mmc_init_erase: card->erase_size = %d", card->erase_size);
 	if (is_power_of_2(card->erase_size))
 		card->erase_shift = ffs(card->erase_size) - 1;
 	else
@@ -2055,20 +2050,17 @@ EXPORT_SYMBOL(mmc_sw_reset);
 
 static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 {
-	printk(KERN_INFO "enter mmc_rescan_try_freq\n");
 	host->f_init = freq;
 
 	pr_debug("%s: %s: trying to init card at %u Hz\n",
 		mmc_hostname(host), __func__, host->f_init);
 
-	printk(KERN_INFO "mmc_rescan_try_freq: mmc_power_up\n");
 	mmc_power_up(host, host->ocr_avail);
 
 	/*
 	 * Some eMMCs (with VCCQ always on) may not be reset after power up, so
 	 * do a hardware reset if possible.
 	 */
-	printk(KERN_INFO "mmc_rescan_try_freq: mmc_hw_reset\n");
 	mmc_hw_reset_for_init(host);
 
 	/*
@@ -2080,20 +2072,15 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	if (!(host->caps2 & MMC_CAP2_NO_SDIO))
 		sdio_reset(host);
 
-	printk(KERN_INFO "mmc_rescan_try_freq: mmc_go_idle\n");
 	mmc_go_idle(host);
 
-	printk(KERN_INFO "mmc_rescan_try_freq: !(host->caps2 & MMC_CAP2_NO_SD) = %d\n", !(host->caps2 & MMC_CAP2_NO_SD));
 	if (!(host->caps2 & MMC_CAP2_NO_SD)) {
 		if (mmc_send_if_cond_pcie(host, host->ocr_avail)){
-			printk(KERN_INFO "mmc_rescan_try_freq: mmc_send_if_cond_pcie goto\n");
 			goto out;}
 		if (mmc_card_sd_express(host)){
-			printk(KERN_INFO "mmc_rescan_try_freq: mmc_card_sd_express return\n");
 			return 0;}
 	}
 
-	printk(KERN_INFO "mmc_rescan_try_freq: going by order\n");
 	/* Order's important: probe SDIO, then SD, then MMC */
 	if (!(host->caps2 & MMC_CAP2_NO_SDIO))
 		{printk(KERN_INFO "mmc_rescan_try_freq: mmc_attach_sdio\n");
@@ -2219,7 +2206,6 @@ EXPORT_SYMBOL(mmc_card_alternative_gpt_sector);
 
 void mmc_rescan(struct work_struct *work)
 {
-	printk(KERN_INFO "enter mmc_rescan\n");
 	struct mmc_host *host =
 		container_of(work, struct mmc_host, detect.work);
 	int i;
@@ -2240,7 +2226,6 @@ void mmc_rescan(struct work_struct *work)
 	}
 
 	/* Verify a registered card to be functional, else remove it. */
-	printk(KERN_INFO "mmc_rescan: checking if a card is present\n");
 	if (host->bus_ops)
 		host->bus_ops->detect(host);
 
@@ -2248,11 +2233,9 @@ void mmc_rescan(struct work_struct *work)
 
 	/* if there still is a card present, stop here */
 	if (host->bus_ops != NULL) {
-		printk(KERN_INFO "mmc_rescan: card is not present\n");
 		goto out;
 	}
 
-	printk(KERN_INFO "mmc_rescan: card is present\n");
 	mmc_claim_host(host);
 	if (mmc_card_is_removable(host) && host->ops->get_cd &&
 			host->ops->get_cd(host) == 0) {
@@ -2262,16 +2245,13 @@ void mmc_rescan(struct work_struct *work)
 	}
 
 	/* If an SD express card is present, then leave it as is. */
-	printk(KERN_INFO "mmc_rescan: checking if an SD express card is present\n");
 	if (mmc_card_sd_express(host)) {
-		printk(KERN_INFO "mmc_rescan: an SD express card is present\n");
 		mmc_release_host(host);
 		goto out;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(freqs); i++) {
 		unsigned int freq = freqs[i];
-		printk(KERN_INFO "mmc_rescan: trying to init card at %u Hz\n", freq);
 		if (freq > host->f_max) {
 			if (i + 1 < ARRAY_SIZE(freqs))
 				continue;
