@@ -178,7 +178,9 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 				for (i = 0; i < mrq->data->sg_len; i++) {
 					len += mrq->data->sg[i].length;
 				}
+				pr_info("virtio_mmc_vq_callback: len: %zu\n", len);
 				sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
+				mrq->data->bytes_xfered = len;
 			}
 		}
 	}
