@@ -148,44 +148,37 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
 		} else {
 			printk(KERN_INFO "virtio_mmc_vq_callback: data read: \n");
-			if(true){
-			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
-			size_t len = data->last_mrq->data->blksz;
-			size_t offset = 0;
+			if(false){
+				u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
+				size_t len = data->last_mrq->data->blksz;
+				size_t offset = 0;
 
-			for(int i = 0;i<len;i++) {
-				printk(KERN_CONT "%x ", response->buf[i]);
-			}
-			printk(KERN_CONT "\n");
+				for(int i = 0;i<len;i++) {
+					printk(KERN_CONT "%x ", response->buf[i]);
+				}
+				printk(KERN_CONT "\n");
 
-			sg_miter_start(&data->miter, data->last_mrq->data->sg,
-				       data->last_mrq->data->sg_len, flags);
+				sg_miter_start(&data->miter, data->last_mrq->data->sg,
+						data->last_mrq->data->sg_len, flags);
 
-			while (sg_miter_next(&data->miter)) {
-				size_t copy_len =
-					min(len - offset, data->miter.length);
-				memcpy(data->miter.addr, response->buf + offset,
-				       copy_len);
-				offset += copy_len;
-			}
-
-			sg_miter_stop(&data->miter);
-			} else {
-				struct sg_mapping_iter *sg_miter = &data->miter;
-				sg_miter_start(sg_miter, data->last_mrq->data->sg, 
-				data->last_mrq->data->sg_len, SG_MITER_ATOMIC | SG_MITER_FROM_SG);
-				unsigned short *buf = sg_miter->addr;
-				unsigned int count = sg_miter->length;
-				pr_info("virtio_mmc_vq_callback: writing to miter: count = %d\n", count);
-
-
-				if (count > data->last_mrq->data->blksz) {
-					count = data->last_mrq->data->blksz;
+				while (sg_miter_next(&data->miter)) {
+					size_t copy_len =
+						min(len - offset, data->miter.length);
+					memcpy(data->miter.addr, response->buf + offset,
+						copy_len);
+					offset += copy_len;
 				}
 
-				memcpy(buf, response->buf, count);
+				sg_miter_stop(&data->miter);
+			} else {
+				struct mmc_request* mrq = data->last_mrq;
+				size_t len = 0;
+				int i;
 
-				sg_miter_stop(sg_miter);
+				for (i = 0; i < mrq->data->sg_len; i++) {
+					len += mrq->data->sg[i].length;
+				}
+				sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
 			}
 		}
 	}
