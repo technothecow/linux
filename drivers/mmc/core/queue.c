@@ -227,7 +227,6 @@ static void mmc_mq_exit_request(struct blk_mq_tag_set *set, struct request *req,
 static blk_status_t mmc_mq_queue_rq(struct blk_mq_hw_ctx *hctx,
 				    const struct blk_mq_queue_data *bd)
 {
-	printk(KERN_INFO "mmc_mq_queue_rq\n");
 	struct request *req = bd->rq;
 	struct request_queue *q = req->q;
 	struct mmc_queue *mq = q->queuedata;
