@@ -148,7 +148,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
 		} else {
 			printk(KERN_INFO "virtio_mmc_vq_callback: data read: \n");
-			if(false){
+			if(true){
 			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
 			size_t len = data->last_mrq->data->blksz;
 			size_t offset = 0;
@@ -167,14 +167,18 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 				memcpy(data->miter.addr, response->buf + offset,
 				       copy_len);
 				offset += copy_len;
+				data->miter.consumed = copy_len;
 			}
 
 			sg_miter_stop(&data->miter);
 			} else {
 				struct sg_mapping_iter *sg_miter = &data->miter;
+				sg_miter_start(sg_miter, data->last_mrq->data->sg, 
+				data->last_mrq->data->sg_len, SG_MITER_ATOMIC | SG_MITER_FROM_SG);
 				unsigned short *buf = sg_miter->addr;
 				unsigned int count = sg_miter->length;
 				pr_info("virtio_mmc_vq_callback: writing to miter: count = %d\n", count);
+
 
 				if (count > data->last_mrq->data->blksz) {
 					count = data->last_mrq->data->blksz;
@@ -182,7 +186,6 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 
 				memcpy(buf, response->buf, count);
 
-				sg_miter->consumed = count;
 				sg_miter_stop(sg_miter);
 			}
 		}
