@@ -417,6 +417,7 @@ static int blkdev_writepage(struct page *page, struct writeback_control *wbc)
 
 static int blkdev_read_folio(struct file *file, struct folio *folio)
 {
+	pr_info("blkdev_read_folio\n");
 	return block_read_full_folio(folio, blkdev_get_block);
 }
 

@@ -149,8 +149,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		} else {
 			printk(KERN_INFO "virtio_mmc_vq_callback: data read: \n");
 			u32 flags = SG_MITER_ATOMIC | SG_MITER_FROM_SG;
-			size_t len = data->last_mrq->data->blksz *
-				     data->last_mrq->data->blocks;
+			size_t len = data->last_mrq->data->blksz;
 			size_t offset = 0;
 
 			for(int i = 0;i<len;i++) {

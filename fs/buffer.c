@@ -2362,6 +2362,7 @@ EXPORT_SYMBOL(block_is_partially_uptodate);
  */
 int block_read_full_folio(struct folio *folio, get_block_t *get_block)
 {
+	pr_info("block_read_full_folio\n");
 	struct inode *inode = folio->mapping->host;
 	sector_t iblock, lblock;
 	struct buffer_head *bh, *head, *arr[MAX_BUF_PER_PAGE];
