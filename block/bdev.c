@@ -124,7 +124,6 @@ invalidate:
 
 static void set_init_blocksize(struct block_device *bdev)
 {
-	pr_info("set_init_blocksize: %s\n", bdev->bd_disk->disk_name);
 	unsigned int bsize = bdev_logical_block_size(bdev);
 	loff_t size = i_size_read(bdev->bd_inode);
 
@@ -756,7 +755,6 @@ void blkdev_put_no_open(struct block_device *bdev)
 struct block_device *blkdev_get_by_dev(dev_t dev, blk_mode_t mode, void *holder,
 		const struct blk_holder_ops *hops)
 {
-	pr_info("blkdev_get_by_dev: %d\n", dev);
 	bool unblock_events = true;
 	struct block_device *bdev;
 	struct gendisk *disk;
@@ -789,14 +787,11 @@ struct block_device *blkdev_get_by_dev(dev_t dev, blk_mode_t mode, void *holder,
 	disk_block_events(disk);
 
 	mutex_lock(&disk->open_mutex);
-	pr_info("blkdev_get_by_dev: %s, mutex lock\n", disk->disk_name);
 	ret = -ENXIO;
 	if (!disk_live(disk))
 		goto abort_claiming;
-	pr_info("blkdev_get_by_dev: %s, try_module_get\n", disk->disk_name);
 	if (!try_module_get(disk->fops->owner))
 		goto abort_claiming;
-	pr_info("blkdev_get_by_dev: %s, blkdev_get\n", disk->disk_name);
 	if (bdev_is_partition(bdev))
 		ret = blkdev_get_part(bdev, mode);
 	else
@@ -804,7 +799,6 @@ struct block_device *blkdev_get_by_dev(dev_t dev, blk_mode_t mode, void *holder,
 	if (ret)
 		goto put_module;
 	if (holder) {
-		pr_info("blkdev_get_by_dev: %s, bd_finish_claiming\n", disk->disk_name);
 		bd_finish_claiming(bdev, holder, hops);
 
 		/*
@@ -821,7 +815,6 @@ struct block_device *blkdev_get_by_dev(dev_t dev, blk_mode_t mode, void *holder,
 		}
 	}
 	mutex_unlock(&disk->open_mutex);
-	pr_info("blkdev_get_by_dev: %s, mutex unlock\n", disk->disk_name);
 
 	if (unblock_events)
 		disk_unblock_events(disk);

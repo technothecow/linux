@@ -3696,27 +3696,19 @@ EXPORT_SYMBOL(generic_file_readonly_mmap);
 static struct folio *do_read_cache_folio(struct address_space *mapping,
 		pgoff_t index, filler_t filler, struct file *file, gfp_t gfp)
 {
-	pr_info("do_read_cache_folio\n");
 	struct folio *folio;
 	int err;
 
 	if (!filler) {
-		pr_info("do_read_cache_folio filler begin\n");
 		filler = mapping->a_ops->read_folio;
-		pr_info("do_read_cache_folio filler end\n");
 	}
 repeat:
-	pr_info("do_read_cache_folio filemap_get_folio begin\n");
-	pr_info("Function pointer 'filler' points to: %pS\n", filler);
 	folio = filemap_get_folio(mapping, index);
-	pr_info("do_read_cache_folio filemap_get_folio end\n");
 	if (IS_ERR(folio)) {
 		folio = filemap_alloc_folio(gfp, 0);
 		if (!folio)
 			return ERR_PTR(-ENOMEM);
-		pr_info("do_read_cache_folio filemap_add_folio begin\n");
 		err = filemap_add_folio(mapping, folio, index, gfp);
-		pr_info("do_read_cache_folio filemap_add_folio end, err = %d\n", err);
 		if (unlikely(err)) {
 			folio_put(folio);
 			if (err == -EEXIST)
@@ -3727,10 +3719,8 @@ repeat:
 
 		goto filler;
 	}
-	pr_info("do_read_cache_folio folio_test_uptodate begin\n");
 	if (folio_test_uptodate(folio))
 		goto out;
-	pr_info("do_read_cache_folio folio_test_uptodate end\n");
 
 	if (!folio_trylock(folio)) {
 		folio_put_wait_locked(folio, TASK_UNINTERRUPTIBLE);
@@ -3751,9 +3741,7 @@ repeat:
 	}
 
 filler:
-	pr_info("do_read_cache_folio filemap_read_folio begin\n");
 	err = filemap_read_folio(file, filler, folio);
-	pr_info("do_read_cache_folio filemap_read_folio end, err = %d\n", err);
 	if (err) {
 		folio_put(folio);
 		if (err == AOP_TRUNCATED_PAGE)

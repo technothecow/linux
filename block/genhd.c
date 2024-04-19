@@ -370,7 +370,6 @@ int disk_scan_partitions(struct gendisk *disk, blk_mode_t mode)
 	set_bit(GD_NEED_PART_SCAN, &disk->state);
 	bdev = blkdev_get_by_dev(disk_devt(disk), mode & ~BLK_OPEN_EXCL, NULL,
 				 NULL);
-	pr_info("disk_scan_partitions: blkdev_get_by_dev finished\n");
 	if (IS_ERR(bdev))
 		ret =  PTR_ERR(bdev);
 	else
