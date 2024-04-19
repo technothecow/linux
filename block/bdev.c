@@ -879,7 +879,6 @@ EXPORT_SYMBOL(blkdev_get_by_path);
 
 void blkdev_put(struct block_device *bdev, void *holder)
 {
-	pr_info("blkdev_put: %s\n", bdev->bd_disk->disk_name);
 	struct gendisk *disk = bdev->bd_disk;
 
 	/*
