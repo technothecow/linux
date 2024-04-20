@@ -147,7 +147,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			for (i = 0; i < mrq->data->sg_len; i++) {
 				len += mrq->data->sg[i].length;
 			}
-			pr_info("virtio_mmc_vq_callback: data read, len: %zu\n", len);
+			// pr_info("virtio_mmc_vq_callback: data read, len: %zu\n", len);
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
 			mrq->data->bytes_xfered = len;
 		}
@@ -172,7 +172,6 @@ static int create_host(struct virtio_device *vdev)
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
 	host->caps = MMC_CAP_CMD23;
 	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC;
-	// host->max_blk_count = 2;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
 
