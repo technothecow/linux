@@ -154,7 +154,6 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 			cmd->retries = 0;
 	}
 
-
 	if (host->ongoing_mrq == mrq)
 		host->ongoing_mrq = NULL;
 
@@ -208,7 +207,6 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 	 * Request starter must handle retries - see
 	 * mmc_wait_for_req_done().
 	 */
-
 	if (mrq->done)
 		mrq->done(mrq);
 }
@@ -2075,27 +2073,24 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 	mmc_go_idle(host);
 
 	if (!(host->caps2 & MMC_CAP2_NO_SD)) {
-		if (mmc_send_if_cond_pcie(host, host->ocr_avail)){
-			goto out;}
-		if (mmc_card_sd_express(host)){
-			return 0;}
+		if (mmc_send_if_cond_pcie(host, host->ocr_avail))
+			goto out;
+		if (mmc_card_sd_express(host))
+			return 0;
 	}
 
 	/* Order's important: probe SDIO, then SD, then MMC */
 	if (!(host->caps2 & MMC_CAP2_NO_SDIO))
-		{printk(KERN_INFO "mmc_rescan_try_freq: mmc_attach_sdio\n");
 		if (!mmc_attach_sdio(host))
-			return 0;}
+			return 0;
 
 	if (!(host->caps2 & MMC_CAP2_NO_SD)) 
-		{printk(KERN_INFO "mmc_rescan_try_freq: mmc_attach_sd\n");
 		if (!mmc_attach_sd(host))
-			return 0;}
+			return 0;
 
 	if (!(host->caps2 & MMC_CAP2_NO_MMC))
-		{printk(KERN_INFO "mmc_rescan_try_freq: mmc_attach_mmc\n");
 		if (!mmc_attach_mmc(host))
-			return 0;}
+			return 0;
 
 out:
 	mmc_power_off(host);
@@ -2232,9 +2227,8 @@ void mmc_rescan(struct work_struct *work)
 	host->detect_change = 0;
 
 	/* if there still is a card present, stop here */
-	if (host->bus_ops != NULL) {
+	if (host->bus_ops != NULL)
 		goto out;
-	}
 
 	mmc_claim_host(host);
 	if (mmc_card_is_removable(host) && host->ops->get_cd &&

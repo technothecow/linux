@@ -37,11 +37,9 @@ int mmc_app_cmd(struct mmc_host *host, struct mmc_card *card)
 		cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_BCR;
 	}
 
-	printk(KERN_INFO "mmc_app_cmd 1");
 	err = mmc_wait_for_cmd(host, &cmd, 0);
 	if (err)
 		return err;
-	printk(KERN_INFO "mmc_app_cmd 2");
 
 	/* Check that card supported application commands */
 	if (!mmc_host_is_spi(host) && !(cmd.resp[0] & R1_APP_CMD))
@@ -54,7 +52,6 @@ EXPORT_SYMBOL_GPL(mmc_app_cmd);
 static int mmc_wait_for_app_cmd(struct mmc_host *host, struct mmc_card *card,
 				struct mmc_command *cmd)
 {
-	printk(KERN_INFO "mmc_wait_for_app_cmd 1");
 	struct mmc_request mrq = {};
 	int i, err = -EIO;
 
@@ -63,9 +60,7 @@ static int mmc_wait_for_app_cmd(struct mmc_host *host, struct mmc_card *card,
 	 * we cannot use the retries field in mmc_command.
 	 */
 	for (i = 0; i <= MMC_CMD_RETRIES; i++) {
-		printk(KERN_INFO "mmc_wait_for_app_cmd 2");
 		err = mmc_app_cmd(host, card);
-		printk(KERN_INFO "mmc_wait_for_app_cmd 3, err = %d", err);
 		if (err) {
 			/* no point in retrying; no APP commands allowed */
 			if (mmc_host_is_spi(host)) {
@@ -75,25 +70,19 @@ static int mmc_wait_for_app_cmd(struct mmc_host *host, struct mmc_card *card,
 			continue;
 		}
 
-		printk(KERN_INFO "mmc_wait_for_app_cmd 3");
 		memset(&mrq, 0, sizeof(struct mmc_request));
 
-		printk(KERN_INFO "mmc_wait_for_app_cmd 4");
 		memset(cmd->resp, 0, sizeof(cmd->resp));
 		cmd->retries = 0;
 
 		mrq.cmd = cmd;
 		cmd->data = NULL;
 
-		printk(KERN_INFO "mmc_wait_for_app_cmd 5");
 		mmc_wait_for_req(host, &mrq);
 
 		err = cmd->error;
-		printk(KERN_INFO "mmc_wait_for_app_cmd 6");
 		if (!cmd->error)
 			break;
-
-		printk(KERN_INFO "mmc_wait_for_app_cmd 7");
 
 		/* no point in retrying illegal APP commands */
 		if (mmc_host_is_spi(host)) {
@@ -128,7 +117,6 @@ int mmc_app_set_bus_width(struct mmc_card *card, int width)
 
 int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 {
-	printk(KERN_INFO "mmc_send_app_op_cond\n");
 	struct mmc_command cmd = {};
 	int i, err = 0;
 
@@ -140,17 +128,13 @@ int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 	cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R3 | MMC_CMD_BCR;
 
 	for (i = 100; i; i--) {
-		printk(KERN_INFO "mmc_send_app_op_cond: mmc_wait_for_app_cmd\n");
 		err = mmc_wait_for_app_cmd(host, NULL, &cmd);
-		printk(KERN_INFO "mmc_send_app_op_cond: mmc_wait_for_app_cmd done; resp[0] = %x, resp[1] = %x; err = %d\n", cmd.resp[0], cmd.resp[1], err);
 		if (err)
 			break;
 
 		/* if we're just probing, do a single pass */
-		if (ocr == 0) {
-			printk(KERN_INFO "mmc_send_app_op_cond: we're just probing, do a single pass\n");
+		if (ocr == 0)
 			break;
-		}
 
 		/* otherwise wait until reset completes */
 		if (mmc_host_is_spi(host)) {
@@ -169,10 +153,8 @@ int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 	if (!i)
 		pr_err("%s: card never left busy state\n", mmc_hostname(host));
 
-	if (rocr && !mmc_host_is_spi(host)) {
-		printk(KERN_INFO "mmc_send_app_op_cond: rocr = %x\n", cmd.resp[0]);
+	if (rocr && !mmc_host_is_spi(host))
 		*rocr = cmd.resp[0];
-	}
 
 	return err;
 }
@@ -180,7 +162,6 @@ int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
 static int __mmc_send_if_cond(struct mmc_host *host, u32 ocr, u8 pcie_bits,
 			      u32 *resp)
 {
-	printk(KERN_INFO "__mmc_send_if_cond\n");
 	struct mmc_command cmd = {};
 	int err;
 	static const u8 test_pattern = 0xAA;
@@ -196,17 +177,13 @@ static int __mmc_send_if_cond(struct mmc_host *host, u32 ocr, u8 pcie_bits,
 	cmd.flags = MMC_RSP_SPI_R7 | MMC_RSP_R7 | MMC_CMD_BCR;
 
 	err = mmc_wait_for_cmd(host, &cmd, 0);
-	printk(KERN_INFO "__mmc_send_if_cond: mmc_wait_for_cmd done; resp[0] = %x, resp[1] = %x; err = %d\n", cmd.resp[0], cmd.resp[1], err);
 	if (err)
 		return err;
 
-	if (mmc_host_is_spi(host)) {
-		printk(KERN_INFO "__mmc_send_if_cond: SPI host, result_pattern = %x\n", cmd.resp[1] & 0xFF);
+	if (mmc_host_is_spi(host))
 		result_pattern = cmd.resp[1] & 0xFF;
-	} else {
-		printk(KERN_INFO "__mmc_send_if_cond: non-SPI host, result_pattern = %x\n", cmd.resp[0] & 0xFF);
+	else
 		result_pattern = cmd.resp[0] & 0xFF;
-	}
 
 	if (result_pattern != test_pattern)
 		return -EIO;
@@ -224,7 +201,6 @@ int mmc_send_if_cond(struct mmc_host *host, u32 ocr)
 
 int mmc_send_if_cond_pcie(struct mmc_host *host, u32 ocr)
 {
-	printk(KERN_INFO "mmc_send_if_cond_pcie\n");
 	u32 resp = 0;
 	u8 pcie_bits = 0;
 	int ret;
@@ -236,19 +212,13 @@ int mmc_send_if_cond_pcie(struct mmc_host *host, u32 ocr)
 			/* Probe also for 1.2V support. */
 			pcie_bits = 0x30;
 	}
-	printk(KERN_INFO "mmc_send_if_cond_pcie: pcie_bits = %x\n", pcie_bits);
 
-	printk("mmc_send_if_cond_pcie: __mmc_send_if_cond\n");
 	ret = __mmc_send_if_cond(host, ocr, pcie_bits, &resp);
-	if (ret){
-		printk(KERN_ERR "mmc_send_if_cond_pcie: __mmc_send_if_cond failed\n");
-		return 0;}
-	printk(KERN_INFO "mmc_send_if_cond_pcie: __mmc_send_if_cond done, resp = %x\n", resp);
-
+	if (ret)
+		return 0;
 
 	/* Continue with the SD express init, if the card supports it. */
 	resp &= 0x3000;
-	printk(KERN_INFO "mmc_send_if_cond_pcie: resp && pcie_bits = %d\n", resp && pcie_bits);
 	if (pcie_bits && resp) {
 		if (resp == 0x3000)
 			host->ios.timing = MMC_TIMING_SD_EXP_1_2V;
@@ -324,12 +294,8 @@ int mmc_app_send_scr(struct mmc_card *card)
 
 	mmc_wait_for_req(card->host, &mrq);
 
-	printk(KERN_INFO "mmc_app_send_scr: scr[0] = %x, scr[1] = %x\n", scr[0], scr[1]);
-
 	card->raw_scr[0] = be32_to_cpu(scr[0]);
 	card->raw_scr[1] = be32_to_cpu(scr[1]);
-	
-	printk(KERN_INFO "mmc_app_send_scr: raw_scr[0] = %x, raw_scr[1] = %x\n", card->raw_scr[0], card->raw_scr[1]);
 
 	kfree(scr);
 

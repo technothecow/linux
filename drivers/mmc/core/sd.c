@@ -213,17 +213,8 @@ static int mmc_decode_scr(struct mmc_card *card)
 	unsigned int scr_struct;
 	u32 resp[4];
 
-	for(int i = 0; i < 4; i++) {
-		printk(KERN_INFO "resp[%d] = %x\n", i, resp[i]);
-	}
-
-	resp[3] = card->raw_scr[1]; // 0-31 = 0
-	resp[2] = card->raw_scr[0]; // 32-63 = 0000 0010 0010 0101 1000 0000 0000 0000
-								//         ^scr[0]   ^scr[1]   ^scr[2]   ^scr[3]
-
-	for(int i = 0; i < 4; i++) {
-		printk(KERN_INFO "resp[%d] = %x\n", i, resp[i]);
-	}
+	resp[3] = card->raw_scr[1];
+	resp[2] = card->raw_scr[0];
 
 	scr_struct = UNSTUFF_BITS(resp, 60, 4);
 	if (scr_struct != 0) {
@@ -234,20 +225,13 @@ static int mmc_decode_scr(struct mmc_card *card)
 
 	scr->sda_vsn = UNSTUFF_BITS(resp, 56, 4);
 	scr->bus_widths = UNSTUFF_BITS(resp, 48, 4);
-	printk(KERN_INFO "mmc_decode_scr: scr->sda_vsn = %d\n", scr->sda_vsn);
-	if (scr->sda_vsn == SCR_SPEC_VER_2) {
+	if (scr->sda_vsn == SCR_SPEC_VER_2)
 		/* Check if Physical Layer Spec v3.0 is supported */
-		printk(KERN_INFO "mmc_decode_scr: scr->sda_vsn == SCR_SPEC_VER_2\n");
 		scr->sda_spec3 = UNSTUFF_BITS(resp, 47, 1);
-		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec3 = %d\n", scr->sda_spec3);
-	} else {
-		printk(KERN_INFO "mmc_decode_scr: scr->sda_vsn != SCR_SPEC_VER_2\n");
-	}
 
 	if (scr->sda_spec3) {
 		scr->sda_spec4 = UNSTUFF_BITS(resp, 42, 1);
 		scr->sda_specx = UNSTUFF_BITS(resp, 38, 4);
-		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec4 = %d\n", scr->sda_spec4);
 	}
 
 	if (UNSTUFF_BITS(resp, 55, 1))
@@ -255,18 +239,10 @@ static int mmc_decode_scr(struct mmc_card *card)
 	else
 		card->erased_byte = 0x0;
 
-	printk(KERN_INFO "Checking sda_spec");
-	if (scr->sda_spec4) {
-		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec4 == 1\n");
+	if (scr->sda_spec4)
 		scr->cmds = UNSTUFF_BITS(resp, 32, 4);
-	}
-	else if (scr->sda_spec3) {
-		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec3 == 1\n");
+	else if (scr->sda_spec3)
 		scr->cmds = UNSTUFF_BITS(resp, 32, 2);
-	} else {
-		printk(KERN_INFO "mmc_decode_scr: scr->sda_spec3 == 0\n");
-	}
-	printk(KERN_INFO "mmc_decode_scr: scr->cmds = %d\n", scr->cmds);
 
 	/* SD Spec says: any SD Card shall set at least bits 0 and 2 */
 	if (!(scr->bus_widths & SD_SCR_BUS_WIDTH_1) ||
@@ -951,19 +927,16 @@ static int mmc_sd_get_ro(struct mmc_host *host)
 int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
 	bool reinit)
 {
-	printk(KERN_INFO "mmc_sd_setup_card\n");
 	int err;
 
 	if (!reinit) {
 		/*
 		 * Fetch SCR from card.
 		 */
-		printk(KERN_INFO "mmc_sd_setup_card: mmc_app_send_scr\n");
 		err = mmc_app_send_scr(card);
 		if (err)
 			return err;
 
-		printk(KERN_INFO "mmc_sd_setup_card: mmc_decode_scr\n");
 		err = mmc_decode_scr(card);
 		if (err)
 			return err;
@@ -1514,7 +1487,6 @@ retry:
 	if (!v18_fixup_failed && !mmc_host_is_spi(host) && mmc_host_uhs(host) &&
 	    mmc_sd_card_using_v18(card) &&
 	    host->ios.signal_voltage != MMC_SIGNAL_VOLTAGE_180) {
-		printk(KERN_INFO "mmc_sd_init_card: v18_fixup_failed\n");
 		if (mmc_host_set_uhs_voltage(host) ||
 		    mmc_sd_init_uhs_card(card)) {
 			v18_fixup_failed = true;
@@ -1859,13 +1831,10 @@ int mmc_attach_sd(struct mmc_host *host)
 
 	WARN_ON(!host->claimed);
 
-	printk(KERN_INFO "mmc_attach_sd: sending APP OP COND\n");
 	err = mmc_send_app_op_cond(host, 0, &ocr);
-	printk(KERN_INFO "mmc_attach_sd: mmc_send_app_op_cond returned %d; ocr = %x\n", err, ocr);
 	if (err)
 		return err;
 
-	printk(KERN_INFO "mmc_attach_sd: mmc_attach_bus\n");
 	mmc_attach_bus(host, &mmc_sd_ops);
 	if (host->ocr_avail_sd)
 		host->ocr_avail = host->ocr_avail_sd;
@@ -1873,14 +1842,10 @@ int mmc_attach_sd(struct mmc_host *host)
 	/*
 	 * We need to get OCR a different way for SPI.
 	 */
-	printk(KERN_INFO "mmc_attach_sd: mmc_host_is_spi?\n");
 	if (mmc_host_is_spi(host)) {
-		printk(KERN_INFO "mmc_attach_sd: mmc_host_is_spi, go_idle\n");
 		mmc_go_idle(host);
 
-		printk(KERN_INFO "mmc_attach_sd: mmc_spi_read_ocr\n");
 		err = mmc_spi_read_ocr(host, 0, &ocr);
-		printk(KERN_INFO "mmc_attach_sd: mmc_spi_read_ocr returned %d\n", err);
 		if (err)
 			goto err;
 	}
@@ -1889,11 +1854,8 @@ int mmc_attach_sd(struct mmc_host *host)
 	 * Some SD cards claims an out of spec VDD voltage range. Let's treat
 	 * these bits as being in-valid and especially also bit7.
 	 */
-	printk(KERN_INFO "ocr before change: %x; ", ocr);
 	ocr &= ~0x7FFF;
-	printk(KERN_CONT "ocr after change: %x\n", ocr);
 
-	printk(KERN_INFO "mmc_attach_sd: mmc_select_voltage\n");
 	rocr = mmc_select_voltage(host, ocr);
 
 	/*
