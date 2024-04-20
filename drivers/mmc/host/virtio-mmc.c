@@ -130,10 +130,10 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	for (int i = 0; i < response->resp_len / 4; i++) {
 		data->last_mrq->cmd->resp[i] = response->response[i];
 	}
-	for (int i = 0; i < response->resp_len / 4; i++) {
-		printk(KERN_CONT "%x ", response->response[i]);
-	}
-	printk(KERN_CONT "\n");
+	// for (int i = 0; i < response->resp_len / 4; i++) {
+	// 	printk(KERN_CONT "%x ", response->response[i]);
+	// }
+	// printk(KERN_CONT "\n");
 
 	if (data->last_mrq->data && data->req.is_data) {
 		struct mmc_request* mrq = data->last_mrq;

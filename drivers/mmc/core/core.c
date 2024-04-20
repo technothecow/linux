@@ -2084,7 +2084,7 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 		if (!mmc_attach_sdio(host))
 			return 0;
 
-	if (!(host->caps2 & MMC_CAP2_NO_SD)) 
+	if (!(host->caps2 & MMC_CAP2_NO_SD))
 		if (!mmc_attach_sd(host))
 			return 0;
 
