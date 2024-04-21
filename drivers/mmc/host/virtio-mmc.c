@@ -22,13 +22,12 @@ typedef struct mmc_req {
 
 typedef struct virtio_mmc_req {
 	mmc_req request;
-	u32 flags;
 	bool is_data;
 	bool is_write;
 	u8 buf[16384];
 	size_t len;
 	bool is_stop;
-	mmc_req stop;
+	mmc_req stop_req;
 } virtio_mmc_req;
 
 typedef struct virtio_mmc_resp {
@@ -105,9 +104,9 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 	if(mrq->stop) {
 		data->req.is_stop = true;
-		data->req.stop.opcode = mrq->stop->opcode;
-		data->req.stop.arg = mrq->stop->arg;
-		data->req.stop.flags = mrq->stop->flags;
+		data->req.stop_req.opcode = mrq->stop->opcode;
+		data->req.stop_req.arg = mrq->stop->arg;
+		data->req.stop_req.flags = mrq->stop->flags;
 	} else {
 		data->req.is_stop = false;
 	}
