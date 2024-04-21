@@ -116,18 +116,18 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
-	printk(KERN_INFO "virtio_mmc_set_ios\n");
+	// printk(KERN_INFO "virtio_mmc_set_ios\n");
 }
 
 static int virtio_mmc_get_ro(struct mmc_host *mmc)
 {
-	printk(KERN_INFO "virtio_mmc_get_ro\n");
+	// printk(KERN_INFO "virtio_mmc_get_ro\n");
 	return 0;
 }
 
 static int virtio_mmc_get_cd(struct mmc_host *mmc)
 {
-	printk(KERN_INFO "virtio_mmc_get_cd\n");
+	// printk(KERN_INFO "virtio_mmc_get_cd\n");
 	return 1;
 }
 
@@ -156,7 +156,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	if (data->last_mrq->data && data->req.is_data) {
 		struct mmc_request* mrq = data->last_mrq;
 		if (data->req.is_write) {
-			printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
+			// printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
 			mrq->data->bytes_xfered = mrq->data->blksz * mrq->data->blocks;
 		} else {
 			size_t len = 0;
@@ -165,7 +165,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			for (i = 0; i < mrq->data->sg_len; i++) {
 				len += mrq->data->sg[i].length;
 			}
-			pr_info("virtio_mmc_vq_callback: data read, expected len: %zu\n", len);
+			// pr_info("virtio_mmc_vq_callback: data read, expected len: %zu\n", len);
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
 			mrq->data->bytes_xfered = len;
 		}
