@@ -72,7 +72,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		if (!virtio_request->is_write) {
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, virtio_response->buf, virtio_request->len);
 		}
-		mrq->data->bytes_xfered = len;
+		mrq->data->bytes_xfered = virtio_request->len;
 	}
 
 	host->current_request = NULL;
