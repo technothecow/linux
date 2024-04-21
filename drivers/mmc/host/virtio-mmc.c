@@ -2,6 +2,7 @@
 #include "asm-generic/int-ll64.h"
 #include "linux/completion.h"
 #include "linux/kern_levels.h"
+#include "linux/mmc/core.h"
 #include "linux/mmc/host.h"
 #include "linux/printk.h"
 #include "linux/scatterlist.h"
@@ -31,8 +32,8 @@ typedef struct virtio_mmc_req {
 } virtio_mmc_req;
 
 typedef struct virtio_mmc_resp {
-	u32 response[4];
-	int resp_len;
+	u32 cmd_resp[4];
+	int cmd_resp_len;
 	u8 buf[4096];
 } virtio_mmc_resp;
 
@@ -135,25 +136,31 @@ static const struct mmc_host_ops virtio_mmc_host_ops = {
 static void virtio_mmc_vq_callback(struct virtqueue *vq)
 {
 	unsigned int len;
-	struct mmc_host *host = vq->vdev->priv;
-	virtio_mmc_data *data = mmc_priv(host);
-	virtio_mmc_resp *response = virtqueue_get_buf(vq, &len);
+	struct mmc_host *mmc;
+	virtio_mmc_data *host;
+	virtio_mmc_req *request;
+	virtio_mmc_resp *response;
+	struct mmc_request *mrq;
 
-	// for (int i = 0; i < response->resp_len / 4; i++) {
-	// 	data->last_mrq->cmd->resp[i] = response->response[i];
-	// }
-	memcpy(data->last_mrq->cmd->resp, response->response, response->resp_len);
+	mmc = vq->vdev->priv;
+	BUG_ON(!mmc);
+	host = mmc_priv(mmc);
+	BUG_ON(!host);
+	mrq = host->last_mrq;
+	BUG_ON(!mrq);
+	request = &host->req;
 
+	response = virtqueue_get_buf(vq, &len);
+	BUG_ON(!response || len != sizeof(*response));
 
-	if (data->last_mrq->data && data->req.is_data) {
-		struct mmc_request* mrq = data->last_mrq;
-		if (data->req.is_write) {
+	memcpy(mrq->cmd->resp, response->cmd_resp, response->cmd_resp_len);
+
+	if (request->is_data) {
+		if (request->is_write) {
 			mrq->data->bytes_xfered = mrq->data->blksz * mrq->data->blocks;
 		} else {
 			size_t len = 0;
-			int i;
-
-			for (i = 0; i < mrq->data->sg_len; i++) {
+			for (int i = 0; i < mrq->data->sg_len; i++) {
 				len += mrq->data->sg[i].length;
 			}
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
@@ -161,9 +168,8 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 		}
 	}
 
-	mmc_request_done(host, data->last_mrq);
-	data->last_mrq = NULL;
-
+	host->last_mrq = NULL;
+	mmc_request_done(mmc, mrq);
 	complete(&request_handled);
 }
 
