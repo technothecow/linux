@@ -188,8 +188,8 @@ static int create_host(struct virtio_device *vdev)
 	host->f_min = 300000;
 	host->f_max = 500000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-	host->caps = MMC_CAP_SD_HIGHSPEED | MMC_CAP_DONE_COMPLETE;
-	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC;
+	host->caps = MMC_CAP_SD_HIGHSPEED;
+	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC | MMC_CAP2_HS400;
 	// host->max_blk_count = 1;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
