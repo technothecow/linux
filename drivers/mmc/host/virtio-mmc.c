@@ -42,13 +42,8 @@ typedef struct virtio_mmc_data {
 	struct virtqueue *vq;
 	struct mmc_request *last_mrq;
 
-	struct scatterlist sg;
-	struct sg_mapping_iter miter;
 	virtio_mmc_req req;
 	virtio_mmc_resp response;
-
-	dev_t devt;
-	struct cdev cdev;
 } virtio_mmc_data;
 
 static void virtio_mmc_send_request_to_qemu(virtio_mmc_data *data)
