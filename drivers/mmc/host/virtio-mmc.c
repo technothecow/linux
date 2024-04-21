@@ -18,10 +18,10 @@ typedef struct virtio_mmc_req {
 	u32 opcode;
 	u32 arg;
 	u32 flags;
-	u32 blocks;
-	u32 blksz;
 	bool is_data;
 	bool is_write;
+	u8 buf[16384];
+	size_t len;
 } virtio_mmc_req;
 
 typedef struct virtio_mmc_resp {
@@ -45,7 +45,7 @@ typedef struct virtio_mmc_data {
 	struct cdev cdev;
 } virtio_mmc_data;
 
-static void virtio_mmc_send_request(virtio_mmc_data *data)
+static void virtio_mmc_send_request_to_qemu(virtio_mmc_data *data)
 {
 	struct scatterlist sg_out_linux, sg_in_linux;
 	sg_init_one(&sg_out_linux, &data->req, sizeof(struct virtio_mmc_req));
@@ -81,19 +81,23 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 	if (mrq->data) {
 		data->req.is_data = true;
-		data->req.blocks = mrq->data->blocks;
-		data->req.blksz = mrq->data->blksz;
-		data->req.flags = mrq->data->flags;
+		// data->req.flags = mrq->data->flags; // TODO: check if anything changes, they might be the same as cmd flags
 		if (mrq->data->flags & MMC_DATA_WRITE) {
 			data->req.is_write = true;
+			size_t len = 0;
+			for (int i = 0; i < mrq->data->sg_len; i++)
+				len += mrq->data->sg[i].length;
+			sg_copy_to_buffer(mrq->data->sg, mrq->data->sg_len, &data->req.buf, len);
+			data->req.len = len;
 		} else {
 			data->req.is_write = false;
+			data->req.len = mrq->data->blksz*mrq->data->blocks;
 		}
 	} else {
 		data->req.is_data = false;
 	}
 
-	virtio_mmc_send_request(data);
+	virtio_mmc_send_request_to_qemu(data);
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
@@ -147,7 +151,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			for (i = 0; i < mrq->data->sg_len; i++) {
 				len += mrq->data->sg[i].length;
 			}
-			// pr_info("virtio_mmc_vq_callback: data read, len: %zu\n", len);
+			pr_info("virtio_mmc_vq_callback: data read, expected len: %zu\n", len);
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
 			mrq->data->bytes_xfered = len;
 		}
