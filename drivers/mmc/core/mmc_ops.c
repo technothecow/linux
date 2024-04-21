@@ -5,6 +5,7 @@
  *  Copyright 2006-2007 Pierre Ossman
  */
 
+#include "linux/printk.h"
 #include <linux/slab.h>
 #include <linux/export.h>
 #include <linux/types.h>
@@ -459,6 +460,7 @@ int mmc_switch_status(struct mmc_card *card, bool crc_err_fatal)
 
 static int mmc_busy_cb(void *cb_data, bool *busy)
 {
+	pr_info("mmc_busy_cb\n");
 	struct mmc_busy_data *data = cb_data;
 	struct mmc_host *host = data->card->host;
 	u32 status = 0;
@@ -526,6 +528,7 @@ int __mmc_poll_for_busy(struct mmc_host *host, unsigned int period_us,
 		if (expired && busy) {
 			pr_err("%s: Card stuck being busy! %s\n",
 				mmc_hostname(host), __func__);
+			dump_stack();
 			return -ETIMEDOUT;
 		}
 
