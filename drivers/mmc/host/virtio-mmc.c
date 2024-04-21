@@ -172,6 +172,7 @@ static int create_host(struct virtio_device *vdev)
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
 	host->caps = MMC_CAP_CMD23;
 	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC;
+	// host->max_blk_count = 1;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
 
@@ -203,19 +204,15 @@ static void remove_host(struct mmc_host *host)
 static int virtio_mmc_probe(struct virtio_device *vdev)
 {
 	int err;
-	printk(KERN_INFO "virtio_mmc_probe\n");
 
 	err = create_host(vdev);
 	if (err) {
 		printk(KERN_ERR "Failed to make host\n");
 	}
-	printk(KERN_INFO "virtio_mmc_probe: mmc host created\n");
 
 	// struct virtio_mmc_data *data = mmc_priv(vdev->priv);
 	init_completion(&request_handled);
-	printk(KERN_INFO "request_handled address: %p\n", &request_handled);
 
-	printk(KERN_INFO "virtio_mmc_probe finished\n");
 	return 0;
 
 	// remove_host:
@@ -226,7 +223,6 @@ static int virtio_mmc_probe(struct virtio_device *vdev)
 
 static void virtio_mmc_remove(struct virtio_device *vdev)
 {
-	printk(KERN_INFO "virtio_mmc_remove\n");
 
 	struct mmc_host *host = vdev->priv;
 	remove_host(host);
