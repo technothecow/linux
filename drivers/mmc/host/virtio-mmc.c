@@ -15,44 +15,49 @@
 
 static DECLARE_COMPLETION(request_handled); // TODO: move it to virtio_mmc_data
 
-typedef struct mmc_req {
+struct mmc_req {
 	u32 opcode;
 	u32 arg;
-} mmc_req;
+};
 
-typedef struct virtio_mmc_req {
-	mmc_req request;
-	bool is_data;
-	bool is_write;
+struct virtio_mmc_request {
+	u8 flags;
+
+#define VIRTIO_MMC_REQUEST_DATA BIT(1)
+#define VIRTIO_MMC_REQUEST_WRITE BIT(2)
+#define VIRTIO_MMC_REQUEST_STOP BIT(3)
+
+	struct mmc_req request;
+
 	u8 buf[4096];
-	size_t len;
-	bool is_stop;
-	mmc_req stop_req;
-} virtio_mmc_req;
+	size_t buf_len;
 
-typedef struct virtio_mmc_resp {
+	struct mmc_req stop_req;
+};
+
+struct virtio_mmc_response {
 	u32 cmd_resp[4];
 	int cmd_resp_len;
 	u8 buf[4096];
-} virtio_mmc_resp;
+};
 
-typedef struct virtio_mmc_data {
+struct virtio_mmc_data {
 	struct virtio_device *vdev;
 	struct mmc_host *mmc;
 	struct virtqueue *vq;
 	struct mmc_request *current_request;
 
-	virtio_mmc_req virtio_request;
-	virtio_mmc_resp virtio_response;
-} virtio_mmc_data;
+	struct virtio_mmc_request virtio_request;
+	struct virtio_mmc_response virtio_response;
+};
 
 static void virtio_mmc_vq_callback(struct virtqueue *vq)
 {
 	unsigned int len;
 	struct mmc_host *mmc;
-	virtio_mmc_data *host;
-	virtio_mmc_req *virtio_request;
-	virtio_mmc_resp *virtio_response;
+	struct virtio_mmc_data *host;
+	struct virtio_mmc_request *virtio_request;
+	struct virtio_mmc_response *virtio_response;
 	struct mmc_request *mrq;
 
 	mmc = vq->vdev->priv;
@@ -68,11 +73,11 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 
 	memcpy(mrq->cmd->resp, virtio_response->cmd_resp, virtio_response->cmd_resp_len);
 
-	if (virtio_request->is_data) {
-		if (!virtio_request->is_write) {
-			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, virtio_response->buf, virtio_request->len);
+	if (virtio_request->flags & VIRTIO_MMC_REQUEST_DATA) {
+		if (!(virtio_request->flags & VIRTIO_MMC_REQUEST_WRITE)) {
+			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, virtio_response->buf, virtio_request->buf_len);
 		}
-		mrq->data->bytes_xfered = virtio_request->len;
+		mrq->data->bytes_xfered = virtio_request->buf_len;
 	}
 
 	host->current_request = NULL;
@@ -80,11 +85,11 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	complete(&request_handled);
 }
 
-static void virtio_mmc_send_request_to_qemu(virtio_mmc_data *data)
+static void virtio_mmc_send_request_to_qemu(struct virtio_mmc_data *data)
 {
 	struct scatterlist sg_out_linux, sg_in_linux;
-	sg_init_one(&sg_out_linux, &data->virtio_request, sizeof(struct virtio_mmc_req));
-	sg_init_one(&sg_in_linux, &data->virtio_response, sizeof(struct virtio_mmc_resp));
+	sg_init_one(&sg_out_linux, &data->virtio_request, sizeof(struct virtio_mmc_request));
+	sg_init_one(&sg_in_linux, &data->virtio_response, sizeof(struct virtio_mmc_response));
 
 	struct scatterlist *request[] = { &sg_out_linux, &sg_in_linux };
 
@@ -98,48 +103,50 @@ static void virtio_mmc_send_request_to_qemu(virtio_mmc_data *data)
 	wait_for_completion(&request_handled);
 }
 
+static inline size_t __calculate_len(struct mmc_data *data)
+{
+	size_t len = 0;
+	for (int i = 0; i < data->sg_len; i++)
+		len += data->sg[i].length;
+	return len;
+}
+
 /* MMC layer callbacks */
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
-	virtio_mmc_data *data;
-	virtio_mmc_req *virtio_req;
+	struct virtio_mmc_data *data;
+	struct virtio_mmc_request *virtio_req;
+	struct mmc_data *mrq_data;
 
 	data = mmc_priv(mmc);
 	BUG_ON(!data);
 	data->current_request = mrq; // Saving the request for the callback
 
 	virtio_req = &data->virtio_request;
+	memset(virtio_req, 0, sizeof(struct virtio_mmc_request));
 
 	BUG_ON(!mrq || !mrq->cmd);
 	virtio_req->request.opcode = mrq->cmd->opcode;
 	virtio_req->request.arg = mrq->cmd->arg;
 
-	if (mrq->data) {
-		virtio_req->is_data = true;
+	mrq_data = mrq->data;
+	if (mrq_data) {
+		virtio_req->flags |= VIRTIO_MMC_REQUEST_DATA;
 
-		size_t len = 0;
-		for (int i = 0; i < mrq->data->sg_len; i++)
-			len += mrq->data->sg[i].length;
-		virtio_req->len = len;
+		virtio_req->buf_len = __calculate_len(mrq->data);
 
-		if (mrq->data->flags & MMC_DATA_WRITE) {
-			data->virtio_request.is_write = true;
-			sg_copy_to_buffer(mrq->data->sg, mrq->data->sg_len, &data->virtio_request.buf, len);
-		} else {
-			virtio_req->is_write = false;
+		virtio_req->flags |= ((mrq_data->flags & MMC_DATA_WRITE) ? VIRTIO_MMC_REQUEST_WRITE : 0);
+		if (virtio_req->flags & VIRTIO_MMC_REQUEST_WRITE) {
+			sg_copy_to_buffer(mrq_data->sg, mrq_data->sg_len, virtio_req->buf, virtio_req->buf_len);
 		}
-	} else {
-		virtio_req->is_data = false;
 	}
 
 	if(mrq->stop) {
-		virtio_req->is_stop = true;
+		virtio_req->flags |= VIRTIO_MMC_REQUEST_STOP;
 
-		data->virtio_request.stop_req.opcode = mrq->stop->opcode;
-		data->virtio_request.stop_req.arg = mrq->stop->arg;
-	} else {
-		data->virtio_request.is_stop = false;
+		virtio_req->stop_req.opcode = mrq->stop->opcode;
+		virtio_req->stop_req.arg = mrq->stop->arg;
 	}
 
 	virtio_mmc_send_request_to_qemu(data);
@@ -147,18 +154,15 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 {
-	printk(KERN_INFO "virtio_mmc_set_ios\n");
 }
 
 static int virtio_mmc_get_ro(struct mmc_host *mmc)
 {
-	printk(KERN_INFO "virtio_mmc_get_ro\n");
 	return 0;
 }
 
 static int virtio_mmc_get_cd(struct mmc_host *mmc)
 {
-	printk(KERN_INFO "virtio_mmc_get_cd\n");
 	return 1;
 }
 
