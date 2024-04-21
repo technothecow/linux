@@ -188,7 +188,7 @@ static int create_host(struct virtio_device *vdev)
 	host->f_min = 300000;
 	host->f_max = 500000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-	host->caps = MMC_CAP_CMD23;
+	host->caps = MMC_CAP_SD_HIGHSPEED;
 	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC;
 	// host->max_blk_count = 1;
 
