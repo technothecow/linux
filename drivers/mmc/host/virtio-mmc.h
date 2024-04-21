@@ -5,9 +5,6 @@
 #include <linux/virtio_ids.h>
 
 #define VIRTIO_MMC_DEV_ID 42
-#define VIRTIO_MMC_DEV_NAME "mmcblk"
-#define VIRTIO_MMC_FIRST_MINOR 0
-#define VIRTIO_MMC_MINOR_COUNT 1
 
 static int virtio_mmc_probe(struct virtio_device *vdev);
 
