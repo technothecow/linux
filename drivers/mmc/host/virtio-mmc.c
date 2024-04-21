@@ -139,18 +139,15 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	virtio_mmc_data *data = mmc_priv(host);
 	virtio_mmc_resp *response = virtqueue_get_buf(vq, &len);
 
-	for (int i = 0; i < response->resp_len / 4; i++) {
-		data->last_mrq->cmd->resp[i] = response->response[i];
-	}
 	// for (int i = 0; i < response->resp_len / 4; i++) {
-	// 	printk(KERN_CONT "%x ", response->response[i]);
+	// 	data->last_mrq->cmd->resp[i] = response->response[i];
 	// }
-	// printk(KERN_CONT "\n");
+	memcpy(data->last_mrq->cmd->resp, response->response, response->resp_len);
+
 
 	if (data->last_mrq->data && data->req.is_data) {
 		struct mmc_request* mrq = data->last_mrq;
 		if (data->req.is_write) {
-			// printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
 			mrq->data->bytes_xfered = mrq->data->blksz * mrq->data->blocks;
 		} else {
 			size_t len = 0;
@@ -159,7 +156,6 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			for (i = 0; i < mrq->data->sg_len; i++) {
 				len += mrq->data->sg[i].length;
 			}
-			// pr_info("virtio_mmc_vq_callback: data read, expected len: %zu\n", len);
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
 			mrq->data->bytes_xfered = len;
 		}
@@ -171,46 +167,48 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	complete(&request_handled);
 }
 
-static int create_host(struct virtio_device *vdev)
+static inline void __fill_host_attr(struct mmc_host *host)
 {
-	int err;
-
-	struct mmc_host *host =
-		mmc_alloc_host(sizeof(struct virtio_mmc_data), &vdev->dev);
-	vdev->priv = host;
 	host->ops = &virtio_mmc_host_ops;
 	host->f_min = 300000;
 	host->f_max = 500000;
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
 	host->caps = MMC_CAP_SD_HIGHSPEED;
 	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC | MMC_CAP2_HS400;
-	host->max_req_size = 524288;
+}
 
-	struct virtio_mmc_data *data = mmc_priv(host);
+static int create_host(struct virtio_device *vdev)
+{
+	int err;
+	struct mmc_host *host;
+	struct virtio_mmc_data *data;
 
-	data->vq =
-		virtio_find_single_vq(vdev, virtio_mmc_vq_callback, "vq_name");
+	host = mmc_alloc_host(sizeof(struct virtio_mmc_data), &vdev->dev);
+	if(!host) {
+		pr_err("virtio_mmc: Failed to allocate host\n");
+		return -ENOMEM;
+	}
+
+	__fill_host_attr(host);
+
+	vdev->priv = host;
+
+	data = mmc_priv(host);
+	data->vq = virtio_find_single_vq(vdev, virtio_mmc_vq_callback, "vq_name");
 	if (!data->vq) {
-		printk(KERN_ERR "Failed to find virtqueue\n");
+		pr_err("virtio_mmc: Failed to find virtqueue\n");
 		mmc_free_host(host);
 		return -ENODEV;
 	}
-	printk(KERN_INFO "virtio_mmc: virtqueue found\n");
 
 	err = mmc_add_host(host);
 	if (err) {
-		printk(KERN_ERR "Failed to add host\n");
+		pr_err("virtio_mmc: Failed to add host\n");
 		mmc_free_host(host);
 		return err;
 	}
 
 	return 0;
-}
-
-static void remove_host(struct mmc_host *host)
-{
-	mmc_remove_host(host);
-	mmc_free_host(host);
 }
 
 static int virtio_mmc_probe(struct virtio_device *vdev)
@@ -220,11 +218,16 @@ static int virtio_mmc_probe(struct virtio_device *vdev)
 	init_completion(&request_handled);
 
 	err = create_host(vdev);
-	if (err) {
+	if (err)
 		pr_err("virtio_mmc: Failed to make host\n");
-	}
 
 	return 0;
+}
+
+static void remove_host(struct mmc_host *host)
+{
+	mmc_remove_host(host);
+	mmc_free_host(host);
 }
 
 static void virtio_mmc_remove(struct virtio_device *vdev)
