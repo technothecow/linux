@@ -155,6 +155,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
 			mrq->data->bytes_xfered = len;
 		}
+		data->last_mrq->data->error = 0;
 	}
 
 	mmc_request_done(host, data->last_mrq);
