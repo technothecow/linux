@@ -184,7 +184,7 @@ static int create_host(struct virtio_device *vdev)
 	host->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
 	host->caps = MMC_CAP_SD_HIGHSPEED;
 	host->caps2 = MMC_CAP2_NO_SDIO | MMC_CAP2_NO_MMC | MMC_CAP2_HS400;
-	host->max_busy_timeout = 1;
+	host->max_req_size = 524288;
 
 	struct virtio_mmc_data *data = mmc_priv(host);
 
