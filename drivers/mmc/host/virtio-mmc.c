@@ -156,7 +156,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 	if (data->last_mrq->data && data->req.is_data) {
 		struct mmc_request* mrq = data->last_mrq;
 		if (data->req.is_write) {
-			printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
+			// printk(KERN_INFO "virtio_mmc_vq_callback: data write\n");
 			mrq->data->bytes_xfered = mrq->data->blksz * mrq->data->blocks;
 		} else {
 			size_t len = 0;
@@ -165,7 +165,7 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			for (i = 0; i < mrq->data->sg_len; i++) {
 				len += mrq->data->sg[i].length;
 			}
-			pr_info("virtio_mmc_vq_callback: data read, expected len: %zu\n", len);
+			// pr_info("virtio_mmc_vq_callback: data read, expected len: %zu\n", len);
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
 			mrq->data->bytes_xfered = len;
 		}
