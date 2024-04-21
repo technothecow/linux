@@ -14,14 +14,21 @@
 
 static DECLARE_COMPLETION(request_handled);
 
-typedef struct virtio_mmc_req {
+typedef struct mmc_req {
 	u32 opcode;
 	u32 arg;
+	u32 flags;
+} mmc_req;
+
+typedef struct virtio_mmc_req {
+	mmc_req request;
 	u32 flags;
 	bool is_data;
 	bool is_write;
 	u8 buf[16384];
 	size_t len;
+	bool is_stop;
+	mmc_req stop;
 } virtio_mmc_req;
 
 typedef struct virtio_mmc_resp {
@@ -73,9 +80,9 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	data->last_mrq = mrq;
 
 	if (mrq->cmd) {
-		data->req.opcode = mrq->cmd->opcode;
-		data->req.arg = mrq->cmd->arg;
-		data->req.flags = mrq->cmd->flags;
+		data->req.request.opcode = mrq->cmd->opcode;
+		data->req.request.arg = mrq->cmd->arg;
+		data->req.request.flags = mrq->cmd->flags;
 	} else {
 		printk(KERN_INFO "Command: NULL\n");
 	}
@@ -95,6 +102,14 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		}
 	} else {
 		data->req.is_data = false;
+	}
+	if(mrq->stop) {
+		data->req.is_stop = true;
+		data->req.stop.opcode = mrq->stop->opcode;
+		data->req.stop.arg = mrq->stop->arg;
+		data->req.stop.flags = mrq->stop->flags;
+	} else {
+		data->req.is_stop = false;
 	}
 
 	virtio_mmc_send_request_to_qemu(data);
@@ -155,7 +170,6 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 			sg_copy_from_buffer(mrq->data->sg, mrq->data->sg_len, response->buf, len);
 			mrq->data->bytes_xfered = len;
 		}
-		data->last_mrq->data->error = 0;
 	}
 
 	mmc_request_done(host, data->last_mrq);

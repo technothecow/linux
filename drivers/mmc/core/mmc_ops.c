@@ -528,7 +528,6 @@ int __mmc_poll_for_busy(struct mmc_host *host, unsigned int period_us,
 		if (expired && busy) {
 			pr_err("%s: Card stuck being busy! %s\n",
 				mmc_hostname(host), __func__);
-			dump_stack();
 			return -ETIMEDOUT;
 		}
 
