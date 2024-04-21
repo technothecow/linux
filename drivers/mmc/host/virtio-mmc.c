@@ -13,8 +13,6 @@
 #include <linux/device.h>
 #include <linux/fs.h>
 
-static DECLARE_COMPLETION(request_handled); // TODO: move it to virtio_mmc_data
-
 struct mmc_req {
 	u32 opcode;
 	u32 arg;
@@ -41,7 +39,7 @@ struct virtio_mmc_response {
 	u8 buf[4096];
 };
 
-struct virtio_mmc_data {
+struct virtio_mmc_host {
 	struct virtio_device *vdev;
 	struct mmc_host *mmc;
 	struct virtqueue *vq;
@@ -49,13 +47,15 @@ struct virtio_mmc_data {
 
 	struct virtio_mmc_request virtio_request;
 	struct virtio_mmc_response virtio_response;
+
+	struct completion request_handled;
 };
 
 static void virtio_mmc_vq_callback(struct virtqueue *vq)
 {
 	unsigned int len;
 	struct mmc_host *mmc;
-	struct virtio_mmc_data *host;
+	struct virtio_mmc_host *host;
 	struct virtio_mmc_request *virtio_request;
 	struct virtio_mmc_response *virtio_response;
 	struct mmc_request *mrq;
@@ -82,10 +82,10 @@ static void virtio_mmc_vq_callback(struct virtqueue *vq)
 
 	host->current_request = NULL;
 	mmc_request_done(mmc, mrq);
-	complete(&request_handled);
+	complete(&host->request_handled);
 }
 
-static void virtio_mmc_send_request_to_qemu(struct virtio_mmc_data *data)
+static void virtio_mmc_send_request_to_qemu(struct virtio_mmc_host *data)
 {
 	struct scatterlist sg_out_linux, sg_in_linux;
 	sg_init_one(&sg_out_linux, &data->virtio_request, sizeof(struct virtio_mmc_request));
@@ -100,7 +100,7 @@ static void virtio_mmc_send_request_to_qemu(struct virtio_mmc_data *data)
 	}
 
 	virtqueue_kick(data->vq);
-	wait_for_completion(&request_handled);
+	wait_for_completion(&data->request_handled);
 }
 
 static inline size_t __calculate_len(struct mmc_data *data)
@@ -115,15 +115,15 @@ static inline size_t __calculate_len(struct mmc_data *data)
 
 static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
-	struct virtio_mmc_data *data;
+	struct virtio_mmc_host *host;
 	struct virtio_mmc_request *virtio_req;
 	struct mmc_data *mrq_data;
 
-	data = mmc_priv(mmc);
-	BUG_ON(!data);
-	data->current_request = mrq; // Saving the request for the callback
+	host = mmc_priv(mmc);
+	BUG_ON(!host);
+	host->current_request = mrq; // Saving the request for the callback
 
-	virtio_req = &data->virtio_request;
+	virtio_req = &host->virtio_request;
 	memset(virtio_req, 0, sizeof(struct virtio_mmc_request));
 
 	BUG_ON(!mrq || !mrq->cmd);
@@ -149,7 +149,7 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		virtio_req->stop_req.arg = mrq->stop->arg;
 	}
 
-	virtio_mmc_send_request_to_qemu(data);
+	virtio_mmc_send_request_to_qemu(host);
 }
 
 static void virtio_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
@@ -186,31 +186,34 @@ static inline void __fill_host_attr(struct mmc_host *host)
 static int create_host(struct virtio_device *vdev)
 {
 	int err;
-	struct mmc_host *host;
-	struct virtio_mmc_data *data;
+	struct mmc_host *mmc;
+	struct virtio_mmc_host *host;
 
-	host = mmc_alloc_host(sizeof(struct virtio_mmc_data), &vdev->dev);
-	if(!host) {
+	mmc = mmc_alloc_host(sizeof(struct virtio_mmc_host), &vdev->dev);
+	if(!mmc) {
 		pr_err("virtio_mmc: Failed to allocate host\n");
 		return -ENOMEM;
 	}
 
-	__fill_host_attr(host);
+	__fill_host_attr(mmc);
 
-	vdev->priv = host;
+	vdev->priv = mmc;
 
-	data = mmc_priv(host);
-	data->vq = virtio_find_single_vq(vdev, virtio_mmc_vq_callback, "vq_name");
-	if (!data->vq) {
+	host = mmc_priv(mmc);
+
+	init_completion(&host->request_handled);
+
+	host->vq = virtio_find_single_vq(vdev, virtio_mmc_vq_callback, "vq_name");
+	if (!host->vq) {
 		pr_err("virtio_mmc: Failed to find virtqueue\n");
-		mmc_free_host(host);
+		mmc_free_host(mmc);
 		return -ENODEV;
 	}
 
-	err = mmc_add_host(host);
+	err = mmc_add_host(mmc);
 	if (err) {
 		pr_err("virtio_mmc: Failed to add host\n");
-		mmc_free_host(host);
+		mmc_free_host(mmc);
 		return err;
 	}
 
@@ -220,8 +223,6 @@ static int create_host(struct virtio_device *vdev)
 static int virtio_mmc_probe(struct virtio_device *vdev)
 {
 	int err;
-
-	init_completion(&request_handled);
 
 	err = create_host(vdev);
 	if (err)
