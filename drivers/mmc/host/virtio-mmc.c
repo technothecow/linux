@@ -82,7 +82,6 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 	if (mrq->data) {
 		data->req.is_data = true;
-		// data->req.flags = mrq->data->flags; // TODO: check if anything changes, they might be the same as cmd flags
 		if (mrq->data->flags & MMC_DATA_WRITE) {
 			data->req.is_write = true;
 			size_t len = 0;
@@ -218,25 +217,18 @@ static int virtio_mmc_probe(struct virtio_device *vdev)
 {
 	int err;
 
-	err = create_host(vdev);
-	if (err) {
-		printk(KERN_ERR "Failed to make host\n");
-	}
-
-	// struct virtio_mmc_data *data = mmc_priv(vdev->priv);
 	init_completion(&request_handled);
 
+	err = create_host(vdev);
+	if (err) {
+		pr_err("virtio_mmc: Failed to make host\n");
+	}
+
 	return 0;
-
-	// remove_host:
-	// 	remove_host(data->mmc);
-
-	return err;
 }
 
 static void virtio_mmc_remove(struct virtio_device *vdev)
 {
-
 	struct mmc_host *host = vdev->priv;
 	remove_host(host);
 }
