@@ -24,6 +24,7 @@ struct virtio_mmc_request {
 #define VIRTIO_MMC_REQUEST_DATA BIT(1)
 #define VIRTIO_MMC_REQUEST_WRITE BIT(2)
 #define VIRTIO_MMC_REQUEST_STOP BIT(3)
+#define VIRTIO_MMC_REQUEST_SBC BIT(4)
 
 	struct mmc_req request;
 
@@ -31,6 +32,7 @@ struct virtio_mmc_request {
 	size_t buf_len;
 
 	struct mmc_req stop_req;
+	struct mmc_req sbc_req;
 };
 
 struct virtio_mmc_response {
@@ -147,6 +149,13 @@ static void virtio_mmc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 		virtio_req->stop_req.opcode = mrq->stop->opcode;
 		virtio_req->stop_req.arg = mrq->stop->arg;
+	}
+
+	if(mrq->sbc) {
+		virtio_req->flags |= VIRTIO_MMC_REQUEST_SBC;
+
+		virtio_req->sbc_req.opcode = mrq->sbc->opcode;
+		virtio_req->sbc_req.arg = mrq->sbc->arg;
 	}
 
 	virtio_mmc_send_request_to_qemu(host);
