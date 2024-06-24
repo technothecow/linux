@@ -1072,5 +1072,7 @@ config MMC_LITEX
 
 config MMC_VIRTIO
 	tristate "VirtIO MMC Host Controller support"
+	depends on VIRTIO
 	help
-	  TODO: write description
+	  This is the virtual MMC host driver for virtio.  It can be used with
+	  QEMU based VMMs (like KVM or Xen).  Say Y or M.
