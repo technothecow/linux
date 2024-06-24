@@ -11,18 +11,18 @@ static int virtio_mmc_probe(struct virtio_device *vdev);
 static void virtio_mmc_remove(struct virtio_device *vdev);
 
 static const struct virtio_device_id id_table[] = {
-	{ VIRTIO_MMC_DEV_ID, VIRTIO_DEV_ANY_ID },
-	{ 0 },
+    { VIRTIO_MMC_DEV_ID, VIRTIO_DEV_ANY_ID },
+    { 0 },
 };
 
 static struct virtio_driver virtio_mmc_driver = {
     .driver = {
-        .name = KBUILD_MODNAME,
-        .owner = THIS_MODULE,
+        .name   = KBUILD_MODNAME,
+        .owner  = THIS_MODULE,
     },
-    .id_table = id_table,
-    .probe = virtio_mmc_probe,
-    .remove = virtio_mmc_remove,
+    .id_table   = id_table,
+    .probe      = virtio_mmc_probe,
+    .remove     = virtio_mmc_remove,
 };
 
 module_virtio_driver(virtio_mmc_driver);
@@ -30,6 +30,6 @@ MODULE_DEVICE_TABLE(virtio, id_table);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("VirtIO MMC driver");
-MODULE_AUTHOR("mi");
+MODULE_AUTHOR("Mikhail Krasheninnikov");
 
 #endif
