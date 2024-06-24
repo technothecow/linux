@@ -1,7 +1,17 @@
 #include "virtio-mmc.h"
+#include "asm-generic/int-ll64.h"
+#include "linux/completion.h"
+#include "linux/kern_levels.h"
+#include "linux/mmc/core.h"
 #include "linux/mmc/host.h"
+#include "linux/printk.h"
+#include "linux/scatterlist.h"
+#include "linux/types.h"
 #include "linux/virtio_config.h"
 #include <linux/virtio.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/fs.h>
 
 struct mmc_req {
 	u32 opcode;
